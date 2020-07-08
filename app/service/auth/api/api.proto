@@ -1,0 +1,63 @@
+syntax = "proto3";
+
+package api;
+
+service Auth {
+    // 根据 Record 生成一个新的 Token
+    rpc GenerateToken(GenerateTokenReq) returns (GenerateTokenResp) {};
+    // 验证 Token 并返回 Record
+    rpc Authenticate(AuthenticateReq) returns (AuthenticateResp) {};
+}
+
+enum AuthLevel {
+    // AuthLevelNone is undefined/not authenticated
+    AuthLevelNone = 0;
+    // AuthLevelAnon is anonymous account/light authentication
+    AuthLevelAnon = 1;
+    // AuthLevelAuth is fully authenticated account
+    AuthLevelAuth = 2;
+    // AuthLevelRoot is a superuser
+    AuthLevelRoot = 3;
+}
+
+enum UserState {
+    UserStateNormal  = 0;
+    UserStateSuspended = 10;
+    UserStateDeleted = 20;
+    UserStateUndefined = 30;
+}
+
+// An authentication record.
+message Record {
+    // User UID
+    string uid = 1;
+    // Authentication level
+    AuthLevel level = 2;
+    // Lifetime of this record
+    string lifetime = 3;
+    // User account state
+    UserState state = 4;
+}
+
+enum HandlerType {
+    HandlerTypeToken = 0;
+    HandlerTypeJWT = 1;
+}
+
+message GenerateTokenReq {
+    HandlerType handler_type = 1;
+    Record record = 2;
+}
+
+message GenerateTokenResp {
+    string token = 1;
+}
+
+message AuthenticateReq {
+    HandlerType handler_type = 1;
+    string token = 2;
+}
+
+message AuthenticateResp {
+    Record record = 1;
+}

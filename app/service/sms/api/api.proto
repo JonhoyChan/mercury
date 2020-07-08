@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package api;
+
+service SMS {
+    // Send send sms
+    rpc Send(SendReq) returns(SendResp);
+}
+
+message SendReq {
+    // User UID
+    string uid = 1;
+    // User Mobile
+    string mobile = 2;
+}
+
+message SendResp {}
