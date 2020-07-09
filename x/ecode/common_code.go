@@ -1,7 +1,7 @@
 package ecode
 
 var (
-	Success      = add(200, "success")
+	OK           = add(200, "ok")
 	ResetContent = add(205, "reset content")
 
 	// 错误的请求

@@ -2,13 +2,12 @@ package session
 
 import (
 	"context"
+	"encoding/json"
 	"outgoing/app/gateway/chat/api"
 	"outgoing/x"
 	"outgoing/x/ecode"
 	"outgoing/x/log"
 	"outgoing/x/types"
-	"strings"
-	"sync"
 	"time"
 
 	"outgoing/x/websocket"
@@ -54,6 +53,7 @@ var minSupportedVersionValue = x.ParseVersion(MinSupportedVersion)
 // Session represents a single WS connection or a long polling session. A user may have multiple
 // sessions.
 type Session struct {
+	ctx context.Context
 	// Session ID.
 	sid string
 	// Server ID.
@@ -86,53 +86,6 @@ type Session struct {
 	// Channel for shutting down the session, buffer 1.
 	// Content in the same format as for 'send'.
 	stop chan []byte
-	// detach - channel for detaching session from topic, buffered.
-	detach chan string
-
-	// Map of topic subscriptions, indexed by topic name.
-	// Don't access directly. Use getters/setters.
-	subs map[string]*Subscription
-	// Mutex for subs access: both topic go routines and network go routines access
-	// subs concurrently.
-	subsLock sync.RWMutex
-}
-
-// Subscription is a mapper of sessions to topics.
-type Subscription struct {
-	// Channel to communicate with the topic, copy of Topic.broadcast
-	broadcast chan<- []byte
-
-	//// Session sends a signal to Topic when this session is unsubscribed
-	//// This is a copy of Topic.unreg
-	//done chan<- *sessionLeave
-	//
-	//// Channel to send {meta} requests, copy of Topic.meta
-	//meta chan<- *metaReq
-	//
-	//// Channel to ping topic with session's updates
-	//supd chan<- *sessionUpdate
-}
-
-func (s *Session) addSub(topic string, sub *Subscription) {
-	s.subsLock.Lock()
-	defer s.subsLock.Unlock()
-	s.subs[topic] = sub
-}
-
-func (s *Session) getSub(topic string) *Subscription {
-	s.subsLock.RLock()
-	defer s.subsLock.RUnlock()
-	return s.subs[topic]
-}
-
-func (s *Session) delSub(topic string) {
-	s.subsLock.Lock()
-	defer s.subsLock.Unlock()
-	delete(s.subs, topic)
-}
-
-func (s *Session) countSub() int {
-	return len(s.subs)
 }
 
 func (s *Session) readLoop() {
@@ -152,7 +105,7 @@ func (s *Session) readLoop() {
 		// Read a ClientComMessage
 		raw, err := s.ws.ReadMessage()
 		if err != nil {
-			log.Error("ws: readLoop", log.Ctx{"error": err, "sid": s.sid})
+			log.Error("[Websocket] failed to read message", log.Ctx{"error": err, "sid": s.sid})
 			return
 		}
 		// TODO Remove this log output
@@ -183,11 +136,11 @@ func (s *Session) writeLoop() {
 				return
 			}
 			if len(s.send) > sendQueueLimit {
-				log.Warn("ws: outbound queue limit exceeded", log.Ctx{"sid": s.sid})
+				log.Warn("[Websocket] outbound queue limit exceeded", log.Ctx{"sid": s.sid})
 				return
 			}
 			if err := s.ws.WriteBinaryMessage(msg); err != nil {
-				log.Error("ws: writeLoop", log.Ctx{"error": err, "sid": s.sid})
+				log.Error("[Websocket] failed to write binary message", log.Ctx{"error": err, "sid": s.sid})
 				return
 			}
 		case msg := <-s.stop:
@@ -196,34 +149,52 @@ func (s *Session) writeLoop() {
 				_ = s.ws.WriteTextMessage(msg)
 			}
 			return
-		//case topic := <-s.detach:
-		//	s.delSub(topic)
 		case <-ticker.C:
 			if err := s.ws.WriteMessage(websocket.PingMessage, nil); err != nil {
-				log.Error("ws: writeLoop ping", log.Ctx{"error": err, "sid": s.sid})
+				log.Error("[Websocket] failed to write ping message", log.Ctx{"error": err, "sid": s.sid})
 				return
 			}
 		}
 	}
 }
 
+type Proto struct {
+	// protocol version
+	Version int32 `json:"version"`
+	// operation for request
+	Operation int32 `json:"operation"`
+	// binary body bytes
+	Body json.RawMessage `json:"body"`
+}
+
 // Message received, convert bytes to ClientComMessage and dispatch
 func (s *Session) dispatchRaw(raw []byte) {
 	var (
-		proto *api.Proto
-		err   error
+		//proto *api.Proto
+		err error
 	)
 
-	proto, err = api.Deserialize(raw)
-	if err != nil {
-		s.queueOut(s.serialize(proto, api.NewResponse(ecode.ErrBadRequest, "", "", 0)))
+	var jsonProto Proto
+	if err = json.Unmarshal(raw, &jsonProto); err != nil {
+		s.queueOut(&jsonProto, ErrMalformed("", 0))
 		return
 	}
+	//proto, err = api.Deserialize(raw)
+	//if err != nil {
+	//	s.queueOut(proto, ErrMalformed("", 0))
+	//	return
+	//}
 
-	s.dispatch(proto)
+	s.dispatch(&jsonProto)
 }
 
-func (s *Session) dispatch(p *api.Proto) {
+type unmarshaler interface {
+	Unmarshal([]byte) error
+}
+
+type handlerFunc func(message *ServerMessage) []byte
+
+func (s *Session) dispatch(p *Proto) {
 	s.lastAction = time.Now().UTC()
 	timestamp := s.lastAction.Unix()
 
@@ -235,12 +206,10 @@ func (s *Session) dispatch(p *api.Proto) {
 		handler = s.heartbeat
 	case types.OperationAuthenticate:
 		handler = s.authenticate
-	case types.OperationSubscribe:
-		handler = s.subscribe
 	default:
 		// Unknown operation
-		log.Warn("[Dispatch] unknown operation", log.Ctx{"sid": s.sid})
-		s.queueOut(s.serialize(p, api.NewResponse(ecode.ErrBadRequest, "", "", timestamp)))
+		log.Debug("[Dispatch] unknown operation", log.Ctx{"sid": s.sid})
+		s.queueOut(p, ErrMalformed("", timestamp))
 		return
 	}
 
@@ -248,45 +217,40 @@ func (s *Session) dispatch(p *api.Proto) {
 		Data:      p.Body,
 		Timestamp: timestamp,
 	}
-	resp := handler(message)
-	if resp != nil {
-		s.queueOut(s.serialize(p, resp))
+	data := handler(message)
+	if data != nil {
+		s.queueOut(p, data)
+		return
 	}
 }
 
-type marshaler interface {
-	Marshal() ([]byte, error)
-}
-
-type handlerFunc func(message *ServerMessage) marshaler
-
-func (s *Session) handshake(message *ServerMessage) marshaler {
+func (s *Session) handshake(message *ServerMessage) []byte {
 	if message.Data == nil {
-		log.Warn("[Handshake] proto body is nil", log.Ctx{"sid": s.sid})
-		return api.NewResponse(ecode.ErrBadRequest, "", "", message.Timestamp)
+		log.Debug("[Handshake] proto body is nil", log.Ctx{"sid": s.sid})
+		return ErrMalformed("", message.Timestamp)
 	}
 
 	var req api.HandshakeRequest
-	if err := req.Unmarshal(message.Data); err != nil {
+	if err := s.deserialize(&req, message.Data); err != nil {
 		log.Warn("[Handshake] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
-		return api.NewResponse(ecode.ErrBadRequest, "", "", message.Timestamp)
+		return ErrMalformed("", message.Timestamp)
 	}
 
 	if s.version == 0 {
 		s.version = x.ParseVersion(req.Version)
 		if s.version == 0 {
-			log.Warn("[Handshake] failed to parse version", "sid", s.sid)
-			return api.NewResponse(ecode.ErrBadRequest, req.MID, "", message.Timestamp)
+			log.Debug("[Handshake] failed to parse version", "sid", s.sid)
+			return ErrMalformed(req.MID, message.Timestamp)
 		}
 		// Check version compatibility
 		if x.VersionCompare(s.version, minSupportedVersionValue) < 0 {
 			s.version = 0
-			log.Warn("[Handshake] unsupported version", "sid", s.sid)
-			return api.NewResponse(ecode.ErrBadRequest.ResetMessage("unsupported version"), req.MID, "", message.Timestamp)
+			log.Debug("[Handshake] unsupported version", "sid", s.sid)
+			return ErrVersionNotSupported(req.MID, message.Timestamp)
 		}
 
 		if req.Token == "" || req.UserAgent == "" {
-			return api.NewResponse(ecode.ErrBadRequest, req.MID, "", message.Timestamp)
+			return ErrMalformed(req.MID, message.Timestamp)
 		}
 
 		// Set user agent & platform in the beginning of the session.
@@ -297,10 +261,10 @@ func (s *Session) handshake(message *ServerMessage) marshaler {
 			s.platform = x.PlatformFromUA(req.UserAgent)
 		}
 
-		uid, authLevel, err := globalClient.authenticate(context.TODO(), req.Token, s.sid, s.serverID)
+		uid, authLevel, err := globalClient.authenticate(s.ctx, req.Token, s.sid, s.serverID)
 		if err != nil {
-			log.Warn("[Authenticate] failed to authenticate token", log.Ctx{"error": err, "sid": s.sid, "token": ""})
-			return api.NewResponse(ecode.ErrBadRequest, req.MID, "", message.Timestamp)
+			log.Error("[Authenticate] failed to authenticate token", log.Ctx{"error": err, "sid": s.sid, "token": ""})
+			return ErrAuthFailed(req.MID, message.Timestamp)
 		}
 
 		// Only set uid in the first time authenticate.
@@ -321,7 +285,7 @@ func (s *Session) handshake(message *ServerMessage) marshaler {
 		//		deviceIDUpdate = true
 		//		err = store.Devices.Update(s.uid, s.deviceID, &types.DeviceDef{
 		//			DeviceId: msg.Hi.DeviceID,
-		//			Platform: s.platf,
+		//			Platform: s.platform,
 		//			LastSeen: msg.timestamp,
 		//			Lang:     msg.Hi.Lang,
 		//		})
@@ -341,37 +305,50 @@ func (s *Session) handshake(message *ServerMessage) marshaler {
 	s.deviceID = req.DeviceID
 	s.language = req.Language
 
-	return api.NewResponse(ecode.Success, req.MID, "", message.Timestamp)
+	return NoErr(req.MID, message.Timestamp)
 }
 
-func (s *Session) heartbeat(message *ServerMessage) marshaler {
-	var req api.HeartbeatRequest
-	if message.Data != nil {
-		if err := req.Unmarshal(message.Data); err != nil {
-			log.Warn("[Heartbeat] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
-			return api.NewResponse(ecode.ErrBadRequest, "", "", message.Timestamp)
-		}
+func (s *Session) heartbeat(message *ServerMessage) []byte {
+	if message.Data == nil {
+		log.Debug("[Heartbeat] proto body is nil", log.Ctx{"sid": s.sid})
+		return ErrMalformed("", message.Timestamp)
 	}
 
-	return api.NewResponse(ecode.Success, req.MID, "", message.Timestamp)
+	var req api.HeartbeatRequest
+	if err := s.deserialize(&req, message.Data); err != nil {
+		log.Warn("[Heartbeat] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
+		return ErrMalformed("", message.Timestamp)
+	}
+
+	if s.uid.IsZero() {
+		log.Debug("[Heartbeat] uid is zero", log.Ctx{"sid": s.sid})
+		return ErrAuthRequired(req.MID, message.Timestamp)
+	}
+
+	if err := globalClient.heartbeat(s.ctx, s.uid.UID(), s.sid, s.serverID); err != nil {
+		log.Error("[Heartbeat] failed to heartbeat", log.Ctx{"error": err, "uid": s.uid.UID(), "sid": s.sid})
+		return ErrInternalServer(req.MID, message.Timestamp)
+	}
+
+	return NoErr(req.MID, message.Timestamp)
 }
 
-func (s *Session) authenticate(message *ServerMessage) marshaler {
+func (s *Session) authenticate(message *ServerMessage) []byte {
 	if message.Data == nil {
-		log.Warn("[Authenticate] proto body is nil", log.Ctx{"sid": s.sid})
-		return api.NewResponse(ecode.ErrBadRequest, "", "", message.Timestamp)
+		log.Debug("[Authenticate] proto body is nil", log.Ctx{"sid": s.sid})
+		return ErrMalformed("", message.Timestamp)
 	}
 
 	var req api.AuthenticateRequest
-	if err := req.Unmarshal(message.Data); err != nil {
+	if err := s.deserialize(&req, message.Data); err != nil {
 		log.Warn("[Authenticate] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
-		return api.NewResponse(ecode.ErrBadRequest, "", "", message.Timestamp)
+		return ErrMalformed("", message.Timestamp)
 	}
 
-	uid, authLevel, err := globalClient.authenticate(context.TODO(), req.Token, s.sid, s.serverID)
+	uid, authLevel, err := globalClient.authenticate(s.ctx, req.Token, s.sid, s.serverID)
 	if err != nil {
-		log.Warn("[Authenticate] failed to authenticate token", log.Ctx{"error": err, "sid": s.sid, "token": ""})
-		return api.NewResponse(ecode.ErrBadRequest, req.MID, "", message.Timestamp)
+		log.Error("[Authenticate] failed to authenticate token", log.Ctx{"error": err, "sid": s.sid, "token": ""})
+		return ErrAuthFailed(req.MID, message.Timestamp)
 	}
 
 	// Only set uid in the first time authenticate.
@@ -381,96 +358,41 @@ func (s *Session) authenticate(message *ServerMessage) marshaler {
 	}
 	s.authLevel = authLevel
 
-	return api.NewResponse(ecode.Success, req.MID, "", message.Timestamp)
+	return NoErr(req.MID, message.Timestamp)
 }
 
-// Request to subscribe to a topic
-func (s *Session) subscribe(message *ServerMessage) marshaler {
-	if message.Data == nil {
-		log.Warn("[Subscribe] proto body is nil", log.Ctx{"sid": s.sid})
-		return api.NewResponse(ecode.ErrBadRequest, "", "", message.Timestamp)
-	}
-
-	var req api.SubscribeRequest
-	if err := req.Unmarshal(message.Data); err != nil {
-		log.Warn("[Subscribe] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
-		return api.NewResponse(ecode.ErrBadRequest, "", "", message.Timestamp)
-	}
-
-	routeTo, resp := s.expandTopicName(req, message.Timestamp)
-	if resp != nil {
-		return resp
-	}
-
-	// Session can subscribe to topic on behalf of a single user at a time.
-	if sub := s.getSub(routeTo); sub != nil {
-		log.Warn("[Subscribe] already subscribed", log.Ctx{"sid": s.sid})
-		return api.NewResponse(ecode.ErrDataAlreadyExist, req.MID, req.Topic, message.Timestamp)
-	} else {
-		globalHub.join <- &sessionJoin{
-			mid:      req.MID,
-			routeTo:  routeTo,
-			original: req.Topic,
-			session:  s,
-		}
-		// Hub will send success/failure packets back to session
-	}
-
-	return nil
-}
-
-// Expands session specific topic name to global name
-func (s *Session) expandTopicName(req api.SubscribeRequest, timestamp int64) (string, marshaler) {
-	if req.Topic == "" {
-		log.Info("empty topic name", "sid", s.sid)
-		return "", api.NewResponse(ecode.ErrBadRequest, req.MID, "", timestamp)
-	}
-
-	var routeTo string
-	if req.Topic == "me" {
-		routeTo = s.uid.UID()
-	} else if req.Topic == "find" {
-		routeTo = s.uid.PrefixId("find_")
-	} else if strings.HasPrefix(req.Topic, "uid") {
-		// p2p topic
-		uid := types.ParseUid(req.Topic)
-		if uid.IsZero() {
-			// Ensure the user id is valid
-			log.Info("failed to parse p2p topic name", "sid", s.sid)
-			return "", api.NewResponse(ecode.ErrBadRequest, req.MID, req.Topic, timestamp)
-		} else if s.uid == uid {
-			// Use 'me' to access self-topic
-			log.Info("invalid p2p self-subscription", "sid", s.sid)
-			return "", api.NewResponse(ecode.ErrUnauthorized, req.MID, req.Topic, timestamp)
-		}
-
-		routeTo = s.uid.P2PName(uid)
-	} else {
-		routeTo = req.Topic
-	}
-
-	return routeTo, nil
-}
-
-func (s *Session) serialize(p *api.Proto, v marshaler) []byte {
+func (s *Session) serialize(p *Proto, body []byte) []byte {
 	if p == nil {
-		p = api.NewProto(int32(types.OperationUnknown))
+		//p = api.NewProto(int32(types.OperationUnknown))
+		p = &Proto{
+			Version:   api.ProtocolVersion,
+			Operation: int32(types.OperationUnknown),
+		}
 	}
-	p.Body, _ = v.Marshal()
-	data, _ := api.Serialize(p)
+	p.Body = body
+	//data, _ := api.Serialize(p)
+	data, _ := json.Marshal(&p)
 	return data
+}
+
+func (s *Session) deserialize(v unmarshaler, body []byte) error {
+	if v == nil {
+		return ecode.NewError("unmarshaler can not be nil")
+	}
+	//return v.Unmarshal(body)
+	return json.Unmarshal(body, v)
 }
 
 // queueOut attempts to send a ServerComMessage to a session; if the send buffer is full,
 // timeout is `sendTimeout`.
-func (s *Session) queueOut(data []byte) bool {
+func (s *Session) queueOut(p *Proto, body []byte) bool {
 	if s == nil {
 		return true
 	}
 	select {
-	case s.send <- data:
+	case s.send <- s.serialize(p, body):
 	case <-time.After(sendTimeout):
-		log.Debug("ws.queueOut: timeout", log.Ctx{"sid": s.sid})
+		log.Debug("[QueueOut] timeout", log.Ctx{"sid": s.sid})
 		return false
 	}
 	return true

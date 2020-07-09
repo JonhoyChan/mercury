@@ -2,6 +2,7 @@ package config
 
 import (
 	"fmt"
+	"github.com/google/uuid"
 	"outgoing/x/config"
 	"outgoing/x/log"
 	"time"
@@ -9,16 +10,26 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	viperKeyCometServiceName = "rpcServices.comet.serviceName"
+)
+
 var v *viper.Viper
 
 type ViperProvider struct {
-	l log.Logger
+	id string
+	l  log.Logger
 }
 
 func NewViperProvider() Provider {
 	return &ViperProvider{
-		l: log.New(log.Ctx{"service": v.GetString(config.ViperKeyServiceName)}),
+		id: uuid.New().String(),
+		l:  log.New(log.Ctx{"service": v.GetString(config.ViperKeyServiceName)}),
 	}
+}
+
+func (p *ViperProvider) ID() string {
+	return p.id
 }
 
 func (p *ViperProvider) Logger() log.Logger {
@@ -60,4 +71,8 @@ func (p *ViperProvider) Etcd() *config.EtcdConfig {
 		Addresses: v.GetStringSlice(config.ViperKeyEtcdAddresses),
 		Timeout:   v.GetDuration(config.ViperKeyEtcdTimeout),
 	}
+}
+
+func (p *ViperProvider) CometServiceName() string {
+	return v.GetString(viperKeyCometServiceName)
 }

@@ -1,8 +1,8 @@
 package config
 
 import (
-	"time"
 	"outgoing/x/log"
+	"time"
 )
 
 type RegistryProvider interface {
@@ -35,6 +35,7 @@ type AuthenticatorProvider interface {
 }
 
 type DefaultProvider interface {
+	ID() string
 	Logger() log.Logger
 	Name() string
 	Version() string

@@ -38,7 +38,7 @@ func main() {
 
 	// Initialize log
 	lvl, _ := log.LvlFromString(c.LogMode())
-	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.LogfmtFormat())))
+	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.TerminalFormat(true))))
 
 	srv := service.NewService(c)
 
@@ -50,11 +50,11 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-signalChan
-		log.Info("[chat-job] get a signal %s", s.String())
+		log.Info("[ChatJob] get a signal")
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
 			srv.Close()
-			log.Info("[chat-job] exit")
+			log.Info("[ChatJob] service shutdown")
 			return
 		case syscall.SIGHUP:
 		default:

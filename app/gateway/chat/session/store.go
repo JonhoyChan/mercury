@@ -9,12 +9,11 @@
 package session
 
 import (
+	"context"
 	"outgoing/app/gateway/chat/stats"
 	"outgoing/x"
 	"outgoing/x/ksuid"
 	"outgoing/x/log"
-	"outgoing/x/types"
-
 	"outgoing/x/websocket"
 )
 
@@ -39,19 +38,13 @@ func NewSessionStore() *SessionStore {
 }
 
 // NewSession creates a new session and saves it to the session store.
-func (ss *SessionStore) NewSession(conn interface{}, sid string, serverID string) {
+func (ss *SessionStore) NewSession(ctx context.Context, conn interface{}, serverID string) {
 	var s Session
-
-	if sid == "" {
-		s.sid = ksuid.New().String()
-	} else {
-		s.sid = sid
-	}
-
+	s.ctx = ctx
+	s.sid = ksuid.New().String()
 	s.serverID = serverID
 
 	if ss.cache.Existed(s.sid) {
-		// TODO: change to panic or log.Fatal
 		panic(x.Sprintf("duplicate session ID", s.sid))
 	}
 
@@ -67,7 +60,6 @@ func (ss *SessionStore) NewSession(conn interface{}, sid string, serverID string
 		//s.subs = make(map[string]*Subscription)
 		s.send = make(chan []byte, sendQueueLimit+32) // buffered
 		s.stop = make(chan []byte, 1)                 // Buffered by 1 just to make it non-blocking
-		s.detach = make(chan string, 64)              // buffered
 	}
 
 	ss.cache.Store(s.sid, &s)
@@ -78,7 +70,7 @@ func (ss *SessionStore) NewSession(conn interface{}, sid string, serverID string
 		go s.readLoop()
 		go s.writeLoop()
 
-		log.Info("ws: session started", log.Ctx{"sid": s.sid, "count": ss.cache.Length()})
+		log.Info("[Websocket] session stored", "sid", s.sid, "count", ss.cache.Length())
 	}
 }
 
@@ -90,16 +82,14 @@ func (ss *SessionStore) Get(sid string) *Session {
 // Delete removes session from store.
 func (ss *SessionStore) Delete(s *Session) {
 	ss.cache.Delete(s.sid)
+	if s.proto == WEBSOCKET {
+		log.Info("[Websocket] session deleted", "sid", s.sid, "count", ss.cache.Length())
+	}
 }
 
 // Shutdown terminates sessionStore. No need to clean up.
 // Don't send to clustered sessions, their servers are not being shut down.
 func (ss *SessionStore) Shutdown() {
 	ss.cache.Shutdown()
-	log.Debug("SessionStore shut down.", "sessions terminated", ss.cache.Length())
-}
-
-// EvictUser terminates all sessions of a given user.
-func (ss *SessionStore) EvictUser(uid types.Uid, skipSid string) {
-	ss.cache.EvictUser(uid, skipSid)
+	log.Debug(x.Sprintf("[SessionStore] shut down. %d sessions terminated", ss.cache.Length()))
 }

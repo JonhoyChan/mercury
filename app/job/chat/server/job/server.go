@@ -43,7 +43,7 @@ func Init(c config.Provider, srv *service.Service) {
 	// Run service
 	go func() {
 		if err := microService.Run(); err != nil {
-			panic("unable to run grpc service:" + err.Error())
+			panic("unable to run job service:" + err.Error())
 		}
 	}()
 }

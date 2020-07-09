@@ -5,6 +5,7 @@ import (
 )
 
 type Provider interface {
+	RPCAddress() string
 	config.DefaultProvider
 	config.RegistryProvider
 }

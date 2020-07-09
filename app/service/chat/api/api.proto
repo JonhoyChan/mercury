@@ -7,10 +7,10 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 service Chat {
    // Connect a connection
-    rpc Connect(ConnectReq) returns (Empty) {};
-    // Disconnect a connection
-    rpc Disconnect(DisconnectReq) returns (Empty) {};
-    // Heartbeat a connection
+   rpc Connect(ConnectReq) returns (Empty) {};
+   // Disconnect a connection
+   rpc Disconnect(DisconnectReq) returns (Empty) {};
+   // Heartbeat a connection
    rpc Heartbeat(HeartbeatReq) returns (Empty) {};
 }
 

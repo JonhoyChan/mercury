@@ -2,6 +2,7 @@ package log
 
 import (
 	"os"
+	"outgoing/x"
 )
 
 var (
@@ -52,6 +53,10 @@ func Warn(msg string, ctx ...interface{}) {
 // Error is a convenient alias for Root().Error
 func Error(msg string, ctx ...interface{}) {
 	root.write(msg, LvlError, ctx, skipLevel)
+}
+
+func Errorf(format string, v interface{}, ctx ...interface{}) {
+	root.write(x.Sprintf(format, v), LvlError, ctx, skipLevel)
 }
 
 // Crit is a convenient alias for Root().Crit

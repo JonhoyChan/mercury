@@ -7,6 +7,7 @@ const (
 	ViperKeyRegisterInterval = "register_interval"
 	ViperKeyHost             = "host"
 	ViperKeyPort             = "port"
+	ViperKeyRPCPort          = "rpc_port"
 
 	// etcd
 	ViperKeyEtcdEnable    = "registry.etcd.enable"

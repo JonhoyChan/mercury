@@ -12,7 +12,7 @@ func Init(configFile string) {
 	// enable ability to specify configuration file via flag
 	v.SetConfigFile(configFile)
 
-	v.SetDefault(config.ViperKeyServiceName, "gateway.chat.job")
+	v.SetDefault(config.ViperKeyServiceName, "service.chat.job")
 	v.SetDefault(config.ViperKeyVersion, "latest")
 	v.SetDefault(config.ViperKeyRegisterTTL, "30s")
 	v.SetDefault(config.ViperKeyRegisterInterval, "15s")

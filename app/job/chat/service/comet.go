@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"github.com/micro/go-micro/v2/client"
-	"github.com/micro/go-micro/v2/registry"
 )
 
 type Comet struct {
@@ -20,14 +19,14 @@ type Comet struct {
 	//routineSize   uint64
 }
 
-func NewComet(node *registry.Node) (*Comet, error) {
-	if node.Address == "" {
-		return nil, fmt.Errorf("invalid node address:%v", node.Address)
+func NewComet(id, address string) (*Comet, error) {
+	if address == "" {
+		return nil, fmt.Errorf("invalid node address: %v", address)
 	}
 
 	comet := &Comet{
-		serverID:   node.Id,
-		callOption: client.WithAddress(node.Address),
+		serverID:   id,
+		callOption: client.WithAddress(address),
 		//pushChan:      make([]chan *comet.PushMsgReq, c.RoutineSize),
 		//roomChan:      make([]chan *comet.BroadcastRoomReq, c.RoutineSize),
 		//broadcastChan: make(chan *comet.BroadcastReq, c.RoutineSize),

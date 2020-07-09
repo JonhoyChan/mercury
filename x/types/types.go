@@ -8,7 +8,6 @@ import (
 	"errors"
 	"sort"
 	"strings"
-	"time"
 )
 
 // Uid is a database-specific record id, suitable to be used as a primary key.
@@ -257,8 +256,6 @@ type TopicCategory int
 const (
 	// TopicCategoryMe is a value denoting 'me' topic.
 	TopicCategoryMe TopicCategory = iota
-	// TopicCategoryFind is a value denoting 'find' topic.
-	TopicCategoryFind
 	// TopicCategoryP2P is a a value denoting 'p2p topic.
 	TopicCategoryP2P
 	// TopicCategoryGrp is a a value denoting group topic.
@@ -274,8 +271,6 @@ func GetTopicCategory(name string) TopicCategory {
 		return TopicCategoryMe
 	case "p2p":
 		return TopicCategoryP2P
-	case "find":
-		return TopicCategoryFind
 	case "group":
 		return TopicCategoryGroup
 	case "system":
@@ -284,120 +279,3 @@ func GetTopicCategory(name string) TopicCategory {
 		panic("invalid topic category for name '" + name + "'")
 	}
 }
-
-// Subscription to a topic
-type Subscription struct {
-	ID        Uid
-	CreatedAt time.Time
-	UpdatedAt time.Time
-	// User who has relationship with the topic
-	User string
-	// Topic subscribed to
-	Topic     string
-	DeletedAt *time.Time
-
-	// Values persisted through subscription soft-deletion
-
-	// ID of the latest Soft-delete operation
-	DelId int
-	// Last SeqId reported by user as received by at least one of his sessions
-	RecvSeqId int
-	// Last SeqID reported read by the user
-	ReadSeqId int
-
-	// Access mode requested by this user
-	//ModeWant AccessMode
-	// Access mode granted to this user
-	//ModeGiven AccessMode
-
-	// Deserialized SeqID from user or topic
-	seqId int
-	// Deserialized TouchedAt from topic
-	touchedAt time.Time
-	// timestamp when the user was last online
-	lastOnline time.Time
-	// user agent string of the last online access
-	userAgent string
-
-	// P2P only. ID of the other user
-	with string
-	// P2P only. Default access: this is the mode given by the other user to this user
-	//modeDefault *DefaultAccess
-
-	// Topic's or user's state.
-	//state ObjState
-}
-
-// SetWith sets other user for P2P subscriptions.
-func (s *Subscription) SetWith(with string) {
-	s.with = with
-}
-
-// GetWith returns the other user for P2P subscriptions.
-func (s *Subscription) GetWith() string {
-	return s.with
-}
-
-// GetTouchedAt returns touchedAt.
-func (s *Subscription) GetTouchedAt() time.Time {
-	return s.touchedAt
-}
-
-// SetTouchedAt sets the value of touchedAt.
-func (s *Subscription) SetTouchedAt(touchedAt time.Time) {
-	if touchedAt.After(s.touchedAt) {
-		s.touchedAt = touchedAt
-	}
-
-	if s.touchedAt.Before(s.UpdatedAt) {
-		s.touchedAt = s.UpdatedAt
-	}
-}
-
-// GetSeqId returns seqId.
-func (s *Subscription) GetSeqId() int {
-	return s.seqId
-}
-
-// SetSeqId sets seqId field.
-func (s *Subscription) SetSeqId(id int) {
-	s.seqId = id
-}
-
-// GetLastSeen returns lastSeen.
-func (s *Subscription) GetLastOnline() time.Time {
-	return s.lastOnline
-}
-
-// GetUserAgent returns userAgent.
-func (s *Subscription) GetUserAgent() string {
-	return s.userAgent
-}
-
-// SetLastOnlineAndUA updates lastOnline time and userAgent.
-func (s *Subscription) SetLastOnlineAndUA(when *time.Time, ua string) {
-	if when != nil {
-		s.lastOnline = *when
-	}
-	s.userAgent = ua
-}
-
-// SetDefaultAccess updates default access values.
-//func (s *Subscription) SetDefaultAccess(auth, anon AccessMode) {
-//	s.modeDefault = &DefaultAccess{auth, anon}
-//}
-
-// GetDefaultAccess returns default access.
-//func (s *Subscription) GetDefaultAccess() *DefaultAccess {
-//	return s.modeDefault
-//}
-
-// GetState returns topic's or user's state.
-//func (s *Subscription) GetState() ObjState {
-//	return s.state
-//}
-
-// SetState assigns topic's or user's state.
-//func (s *Subscription) SetState(state ObjState) {
-//	s.state = state
-//}

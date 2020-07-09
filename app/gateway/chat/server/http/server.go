@@ -28,6 +28,7 @@ type httpServer struct {
 
 func Init(c config.Provider) {
 	opts := []web.Option{
+		web.Id(c.ID()),
 		web.Name(c.Name()),
 		web.Version(c.Version()),
 		web.RegisterTTL(c.RegisterTTL()),
@@ -52,7 +53,7 @@ func Init(c config.Provider) {
 
 	// Initialize service
 	if err := microWeb.Init(); err != nil {
-		panic("unable to  initialize service:" + err.Error())
+		panic("unable to initialize service:" + err.Error())
 	}
 
 	s := &httpServer{
@@ -67,9 +68,11 @@ func Init(c config.Provider) {
 	stats.Init(microWeb, "/debug/vars")
 
 	// Run service
-	if err := microWeb.Run(); err != nil {
-		panic("unable to run http service:" + err.Error())
-	}
+	go func() {
+		if err := microWeb.Run(); err != nil {
+			panic("unable to run http service:" + err.Error())
+		}
+	}()
 }
 
 func (s *httpServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
@@ -94,13 +97,11 @@ func (s *httpServer) setupRouter() {
 
 // TODO
 func (s *httpServer) decryptPath(c *ginx.Context) {
-	// V1UTKZyqyniGX_Zpr00gD7r3fY0lgdljoDg9BkSgHuQfALoSyzoVART3OtnbTe7FLrONf9j1TWarNN4qrPWhawCx8VlyUayVKw
 	encryptPath := c.Query("hash")
 	if encryptPath == "" {
 		c.Error(ecode.ErrBadRequest)
 		return
 	}
-	// 1593743900
 	timestamp := c.GetHeader(ginx.TimestampHeader)
 
 	boxer, _ := secretboxer.SecretBoxerForType(secretboxer.WrapTypePassphrase, timestamp, secretboxer.EncodingTypeURL)
@@ -121,5 +122,5 @@ func (s *httpServer) serveWebSocket(c *ginx.Context) {
 		return
 	}
 
-	session.GlobalSessionStore.NewSession(conn, "", s.id)
+	session.GlobalSessionStore.NewSession(c, conn, s.id)
 }

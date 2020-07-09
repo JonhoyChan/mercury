@@ -6,6 +6,8 @@ option (gogoproto.marshaler_all) = true;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
+message Empty{}
+
 message Proto {
     // protocol version
     int32 version = 1 [(gogoproto.jsontag) = "version"];
@@ -25,14 +27,12 @@ message Error {
 message Response {
     // client-provided message id
     string mid = 1 [(gogoproto.customname) = "MID", (gogoproto.jsontag) = "mid"];
-    // topic name
-    string topic = 2 [(gogoproto.jsontag) = "topic"];
     // code indicating success or failure of the request
-    int32 code = 3 [(gogoproto.customtype) = "int", (gogoproto.nullable) = false, (gogoproto.jsontag) = "code"];
+    int32 code = 2 [(gogoproto.customtype) = "int", (gogoproto.nullable) = false, (gogoproto.jsontag) = "code"];
     // message with more details about the result
-    string message = 4 [(gogoproto.jsontag) = "message"];
+    string message = 3 [(gogoproto.jsontag) = "message"];
     // timestamp
-    int64 timestamp = 5 [(gogoproto.jsontag) = "timestamp"];
+    int64 timestamp = 4 [(gogoproto.jsontag) = "timestamp"];
 }
 
 message HandshakeRequest {
@@ -87,4 +87,8 @@ message Content {
     string message_type = 1 [(gogoproto.jsontag) = "message_type"];
     // message body
     bytes message_body = 2 [(gogoproto.jsontag) = "message_body"];
+}
+
+service Chat {
+    rpc PublishMessage(Empty) returns (Empty);
 }

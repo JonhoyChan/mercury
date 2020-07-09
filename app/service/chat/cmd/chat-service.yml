@@ -1,4 +1,4 @@
-service_name: srv.chat.logic
+service_name: service.chat.logic
 version: latest
 register_ttl: 30s
 register_interval: 15s
@@ -19,7 +19,7 @@ registry:
     timeout: 5s
 
 redis:
-  address: 192.168.88.88:16379
+  address: 192.168.120.88:16379
   username:
   password:
   db: 1

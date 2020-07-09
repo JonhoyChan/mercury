@@ -5,7 +5,8 @@ import (
 	"os"
 	"os/signal"
 	"outgoing/app/gateway/chat/config"
-	"outgoing/app/gateway/chat/http"
+	"outgoing/app/gateway/chat/server/grpc"
+	"outgoing/app/gateway/chat/server/http"
 	"outgoing/app/gateway/chat/session"
 	"outgoing/x"
 	"outgoing/x/log"
@@ -39,21 +40,21 @@ func main() {
 
 	// Initialize log
 	lvl, _ := log.LvlFromString(c.LogMode())
-	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.LogfmtFormat())))
+	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.TerminalFormat(true))))
 
-	// Initialize http server
 	http.Init(c)
+	grpc.Init(c)
 
 	// Signal handler
 	signalChan := make(chan os.Signal, 1)
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-signalChan
-		log.Info("[chat-gateway] get a signal %s", s.String())
+		log.Info("[chat-gateway] get a signal")
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
 			session.GlobalSessionStore.Shutdown()
-			log.Info("[chat-gateway] exit")
+			log.Info("[ChatGateway] service shutdown")
 			return
 		case syscall.SIGHUP:
 		default:

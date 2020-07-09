@@ -1,14 +1,14 @@
 package service
 
 import (
-	"context"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/client/grpc"
 	"github.com/micro/go-micro/v2/registry"
+	cApi "outgoing/app/gateway/chat/api"
 	"outgoing/app/job/chat/config"
-	cApi "outgoing/app/service/chat/api"
 	"outgoing/x/ecode"
 	"outgoing/x/log"
+	"strings"
 	"time"
 )
 
@@ -18,8 +18,7 @@ type Service struct {
 	cometServers map[string]*Comet
 	watchChan    chan bool
 	stopChan     chan struct{}
-	// TODO change to chat gateway client
-	chatService cApi.ChatService
+	chatService  cApi.ChatService
 }
 
 func NewService(config config.Provider) *Service {
@@ -35,7 +34,7 @@ func NewService(config config.Provider) *Service {
 		config:      config,
 		watchChan:   make(chan bool, 1),
 		stopChan:    make(chan struct{}),
-		chatService: cApi.NewChatService("gate.srv", c),
+		chatService: cApi.NewChatService(config.CometServiceName(), c),
 	}
 }
 
@@ -63,7 +62,8 @@ func (s *Service) WatchComet() {
 }
 
 func (s *Service) watch() {
-	watcher, err := s.registry.Watch(registry.WatchService("gateway.chat.comet"))
+	cometServiceName := s.config.CometServiceName()
+	watcher, err := s.registry.Watch(registry.WatchService(cometServiceName))
 	if err != nil {
 		panic("failed to watch service:" + err.Error())
 	}
@@ -109,7 +109,8 @@ func (s *Service) sync() {
 }
 
 func (s *Service) syncCometNodes() error {
-	cometServices, err := s.registry.GetService("gateway.chat.comet")
+	cometServiceName := s.config.CometServiceName()
+	cometServices, err := s.registry.GetService(cometServiceName)
 	if err != nil {
 		log.Error("[SyncCometNodes] failed to new comet", "error", err)
 		return err
@@ -122,20 +123,25 @@ func (s *Service) syncCometNodes() error {
 
 	comets := make(map[string]*Comet)
 	for _, node := range nodes {
-		if old, ok := s.cometServers[node.Id]; ok {
-			comets[node.Id] = old
+		if !strings.HasPrefix(node.Id, cometServiceName) {
 			continue
 		}
 
-		c, err := NewComet(node)
+		id := strings.TrimPrefix(node.Id, cometServiceName+"-")
+		if old, ok := s.cometServers[id]; ok {
+			comets[id] = old
+			continue
+		}
+
+		c, err := NewComet(id, node.Address)
 		if err != nil {
 			log.Error("[SyncCometNodes] can not new comet", "error", err)
 			return err
 		}
 
-		comets[node.Id] = c
+		comets[id] = c
 
-		log.Info("[SyncCometNodes] new comet", "id", node.Id, "address", node.Address)
+		log.Info("[SyncCometNodes] new comet", "id", id, "address", node.Address)
 	}
 
 	for id, old := range s.cometServers {

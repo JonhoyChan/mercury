@@ -85,7 +85,7 @@ type Coder interface {
 // Cause cause from error to ecode.
 func Cause(e error) Coder {
 	if e == nil {
-		return Success
+		return OK
 	}
 
 	c, ok := errors.Cause(e).(Coder)

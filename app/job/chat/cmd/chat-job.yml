@@ -1,4 +1,4 @@
-service_name: gateway.chat.job
+service_name: service.chat.job
 version: latest
 register_ttl: 30s
 register_interval: 15s
@@ -24,3 +24,7 @@ broker:
     addrs: "nats://192.168.13.119:4222"
     clusterID: test-cluster
     durableName: outgoing-durable
+
+rpcServices:
+  comet:
+    serviceName: gateway.chat.comet

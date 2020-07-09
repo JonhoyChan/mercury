@@ -2,9 +2,10 @@ package config
 
 import (
 	"fmt"
-	"time"
+	"github.com/google/uuid"
 	"outgoing/x/config"
 	"outgoing/x/log"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -12,13 +13,19 @@ import (
 var v *viper.Viper
 
 type ViperProvider struct {
-	l log.Logger
+	id string
+	l  log.Logger
 }
 
 func NewViperProvider() Provider {
 	return &ViperProvider{
-		l: log.New(log.Ctx{"service": v.GetString(config.ViperKeyServiceName)}),
+		id: uuid.New().String(),
+		l:  log.New(log.Ctx{"service": v.GetString(config.ViperKeyServiceName)}),
 	}
+}
+
+func (p *ViperProvider) ID() string {
+	return p.id
 }
 
 func (p *ViperProvider) Logger() log.Logger {
@@ -43,6 +50,10 @@ func (p *ViperProvider) RegisterInterval() time.Duration {
 
 func (p *ViperProvider) Address() string {
 	return fmt.Sprintf("%s:%d", v.GetString(config.ViperKeyHost), v.GetInt(config.ViperKeyPort))
+}
+
+func (p *ViperProvider) RPCAddress() string {
+	return fmt.Sprintf("%s:%d", v.GetString(config.ViperKeyHost), v.GetInt(config.ViperKeyRPCPort))
 }
 
 func (p *ViperProvider) LogMode() string {

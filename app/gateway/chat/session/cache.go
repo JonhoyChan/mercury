@@ -1,10 +1,7 @@
 package session
 
 import (
-	"outgoing/app/gateway/chat/api"
 	"outgoing/app/gateway/chat/stats"
-	"outgoing/x/ecode"
-	"outgoing/x/types"
 	"sync"
 )
 
@@ -15,7 +12,6 @@ type Cache interface {
 	Load(key string) *Session
 	Delete(key string)
 	Shutdown()
-	EvictUser(uid types.Uid, skipSid string)
 }
 
 func NewDefaultCache() Cache {
@@ -67,19 +63,6 @@ func (c *defaultCache) Delete(key string) {
 
 func (c *defaultCache) Shutdown() {
 	for _, s := range c.kv {
-		s.stop <- s.serialize(nil, api.NewResponse(ecode.ResetContent.ResetMessage("server shutdown"),
-			"", "", 0))
+		s.stop <- s.serialize(nil, NoErrShutdown())
 	}
-}
-
-func (c *defaultCache) EvictUser(uid types.Uid, skipSid string) {
-	for _, s := range c.kv {
-		if s.uid == uid && s.stop != nil && s.sid != skipSid {
-			s.stop <- s.serialize(nil, api.NewResponse(ecode.ResetContent.ResetMessage("evicted"),
-				"", "", 0))
-			delete(c.kv, s.sid)
-		}
-	}
-
-	stats.Set("LiveSessions", len(c.kv), false)
 }
