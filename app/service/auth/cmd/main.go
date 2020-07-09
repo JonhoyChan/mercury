@@ -44,7 +44,6 @@ func main() {
 		panic("unable to initialize service:" + err.Error())
 	}
 
-	// Initialize grpc server
 	grpc.Init(c, srv)
 
 	// Signal handler
@@ -52,10 +51,9 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-signalChan
-		log.Info("[auth-service] get a signal %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			log.Info("[auth-service] exit")
+			log.Info("[AuthService] service shutdown")
 			return
 		case syscall.SIGHUP:
 		default:

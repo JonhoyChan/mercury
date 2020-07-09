@@ -42,7 +42,6 @@ func main() {
 
 	srv := service.NewService(c)
 
-	// Initialize http server
 	job.Init(c, srv)
 
 	// Signal handler
@@ -50,11 +49,10 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-signalChan
-		log.Info("[ChatJob] get a signal")
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			srv.Close()
 			log.Info("[ChatJob] service shutdown")
+			srv.Close()
 			return
 		case syscall.SIGHUP:
 		default:

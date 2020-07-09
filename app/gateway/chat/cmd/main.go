@@ -50,11 +50,10 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-signalChan
-		log.Info("[chat-gateway] get a signal")
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			session.GlobalSessionStore.Shutdown()
 			log.Info("[ChatGateway] service shutdown")
+			session.GlobalSessionStore.Shutdown()
 			return
 		case syscall.SIGHUP:
 		default:

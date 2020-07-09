@@ -38,7 +38,6 @@ func main() {
 	lvl, _ := log.LvlFromString(c.LogMode())
 	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.LogfmtFormat())))
 
-	// Initialize http server
 	http.Init(c)
 
 	// Signal handler
@@ -46,10 +45,9 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-signalChan
-		log.Info("[account-gateway] get a signal %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			log.Info("[account-gateway] exit")
+			log.Info("[AccountGateway] service shutdown")
 			return
 		case syscall.SIGHUP:
 		default:

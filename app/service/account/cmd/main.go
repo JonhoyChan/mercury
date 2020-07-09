@@ -4,9 +4,9 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"outgoing/app/service/main/account/config"
-	"outgoing/app/service/main/account/server/grpc"
-	"outgoing/app/service/main/account/service"
+	"outgoing/app/service/account/config"
+	"outgoing/app/service/account/server/grpc"
+	"outgoing/app/service/account/service"
 	"outgoing/x"
 	"outgoing/x/log"
 	"path/filepath"
@@ -44,7 +44,6 @@ func main() {
 		panic("unable to initialize service:" + err.Error())
 	}
 
-	// Initialize grpc server
 	grpc.Init(c, srv)
 
 	// Signal handler
@@ -52,10 +51,9 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-signalChan
-		log.Info("[account-service] get a signal %s", s.String())
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			log.Info("[account-service] exit")
+			log.Info("[AccountService] service shutdown")
 			srv.Close()
 			return
 		case syscall.SIGHUP:

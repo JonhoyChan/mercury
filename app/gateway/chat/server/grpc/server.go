@@ -63,7 +63,7 @@ func Init(c config.Provider) {
 	// Run service
 	go func() {
 		if err := microServer.Start(); err != nil {
-			panic("unable to run grpc service:" + err.Error())
+			panic("unable to start service:" + err.Error())
 		}
 	}()
 }

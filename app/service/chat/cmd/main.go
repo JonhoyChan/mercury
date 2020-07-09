@@ -44,7 +44,6 @@ func main() {
 		panic("unable to initialize service:" + err.Error())
 	}
 
-	// Initialize grpc server
 	grpc.Init(c, srv)
 
 	// Signal handler
@@ -52,7 +51,6 @@ func main() {
 	signal.Notify(signalChan, syscall.SIGHUP, syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT)
 	for {
 		s := <-signalChan
-		log.Info("[ChatService] get a signal")
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
 			log.Info("[ChatService] service shutdown")

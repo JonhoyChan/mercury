@@ -1,8 +1,8 @@
 package job
 
 import (
-	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/registry"
+	"github.com/micro/go-micro/v2/server"
 	"github.com/micro/go-plugins/registry/etcdv3/v2"
 	"outgoing/app/job/chat/config"
 	"outgoing/app/job/chat/service"
@@ -12,12 +12,12 @@ import (
 
 // 注册服务
 func Init(c config.Provider, srv *service.Service) {
-	opts := []micro.Option{
-		micro.Name(c.Name()),
-		micro.Version(c.Version()),
-		micro.RegisterTTL(c.RegisterTTL()),
-		micro.RegisterInterval(c.RegisterInterval()),
-		micro.Address(c.Address()),
+	opts := []server.Option{
+		server.Name(c.Name()),
+		server.Version(c.Version()),
+		server.RegisterTTL(c.RegisterTTL()),
+		server.RegisterInterval(c.RegisterInterval()),
+		server.Address(c.Address()),
 	}
 
 	// 判断是否使用了etcd作为服务注册
@@ -31,19 +31,21 @@ func Init(c config.Provider, srv *service.Service) {
 
 			op.Addrs = addresses
 		})
-		opts = append(opts, micro.Registry(etcdv3Registry))
+		opts = append(opts, server.Registry(etcdv3Registry))
 	}
 
-	microService := micro.NewService(opts...)
-	microService.Init()
+	microServer := server.NewServer(opts...)
+	if err := microServer.Init(); err != nil {
+		panic("unable to initialize service:" + err.Error())
+	}
 
-	srv.WithRegistry(microService.Options().Registry)
+	srv.WithRegistry(microServer.Options().Registry)
 	srv.WatchComet()
 
 	// Run service
 	go func() {
-		if err := microService.Run(); err != nil {
-			panic("unable to run job service:" + err.Error())
+		if err := microServer.Start(); err != nil {
+			panic("unable to start service:" + err.Error())
 		}
 	}()
 }
