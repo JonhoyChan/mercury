@@ -4,13 +4,13 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"path/filepath"
-	"syscall"
-	"outgoing/app/service/main/sms/config"
-	"outgoing/app/service/main/sms/server/grpc"
-	"outgoing/app/service/main/sms/service"
+	"outgoing/app/service/sms/config"
+	"outgoing/app/service/sms/server/grpc"
+	"outgoing/app/service/sms/service"
 	"outgoing/x"
 	"outgoing/x/log"
+	"path/filepath"
+	"syscall"
 )
 
 var configFile string

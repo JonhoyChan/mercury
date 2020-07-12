@@ -138,12 +138,12 @@ func (uid Uid) PrefixId(prefix string) string {
 	return prefix + uid.String()
 }
 
-// UserId converts Uid to string prefixed with 'vid', like vidXXXXX
+// UserId converts Uid to string prefixed with 'vid', like uidXXXXX
 func (uid Uid) UID() string {
 	return uid.PrefixId("uid")
 }
 
-// ParseUserVID parses account VID of the form "vidXXXXXX"
+// ParseUserUID parses account VID of the form "uidXXXXXX"
 func ParseUserUID(s string) Uid {
 	var uid Uid
 	if strings.HasPrefix(s, "uid") {

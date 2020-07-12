@@ -1,6 +1,9 @@
 # Binaries for programs and plugins
 *.exe
 
+### config ###
+/.config
+
 ### go sum ###
 go.sum
 

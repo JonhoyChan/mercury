@@ -10,17 +10,6 @@ service Account {
     rpc Register(RegisterReq) returns (RegisterResp) {};
     // 用户登录
     rpc Login(LoginReq) returns (LoginResp) {};
-
-    /* User */
-    //
-    rpc GetUser(GetUserReq) returns (GetUserResp) {};
-    //
-    rpc GetUsers(GetUsersReq) returns (GetUsersResp) {};
-
-    /* Topic */
-    rpc GetTopic(GetTopicReq) returns (GetTopicResp) {};
-    //
-
 }
 
 //message Device {
@@ -65,20 +54,4 @@ message UserInfo {
     string mobile = 9;
     int32 state = 10;
     //    repeated Device devices = 12;
-}
-
-message GetUserReq {
-    string uid = 1 [(gogoproto.customname) = "UID", (gogoproto.jsontag) = "uid"];
-}
-
-message GetUserResp {
-    UserInfo user = 1 [(gogoproto.jsontag) = "user"];
-}
-
-message GetUsersReq {
-    repeated string uids = 1 [(gogoproto.customname) = "UIDs", (gogoproto.jsontag) = "uids"];
-}
-
-message GetUsersResp {
-    repeated UserInfo users = 1 [(gogoproto.jsontag) = "users"];
 }

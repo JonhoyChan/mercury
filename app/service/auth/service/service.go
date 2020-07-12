@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	"outgoing/app/service/main/auth/api"
-	"outgoing/app/service/main/auth/auth"
-	"outgoing/app/service/main/auth/config"
-	"outgoing/app/service/main/auth/persistence/cache"
+	"outgoing/app/service/auth/api"
+	"outgoing/app/service/auth/auth"
+	"outgoing/app/service/auth/config"
+	"outgoing/app/service/auth/persistence/cache"
 	"outgoing/x/database/redis"
 	"outgoing/x/ecode"
 	"outgoing/x/log"
@@ -64,7 +64,7 @@ func (s *Service) Authenticate(_ context.Context, t auth.HandlerType, token stri
 
 	record, token, err := s.multiHandler[t].Authenticate(token)
 	if err != nil {
-		return nil, ecode.Wrap(err, "failed to generate token")
+		return nil, ecode.Wrap(err, "failed to authenticate")
 	}
 
 	return record, nil

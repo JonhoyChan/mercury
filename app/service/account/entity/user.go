@@ -5,7 +5,7 @@ type User struct {
 	ID        uint64 `gorm:"primary_key;column:id"`
 	CreatedAt int64  `gorm:"column:created_at"`
 	UpdatedAt int64  `gorm:"column:updated_at"`
-	VID       string `gorm:"type:VARCHAR;column:vid"`       // 用户唯一ID
+	OID       string `gorm:"type:VARCHAR;column:oid"`       // 用户唯一ID
 	NickName  string `gorm:"type:VARCHAR;column:nick_name"` // 用户昵称
 	Avatar    string `gorm:"type:VARCHAR;column:avatar"`
 	Gender    int8   `gorm:"type:SMALLINT;column:gender"`

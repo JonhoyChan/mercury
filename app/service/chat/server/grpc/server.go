@@ -11,8 +11,8 @@ import (
 
 	ratelimit "github.com/micro/go-plugins/wrapper/ratelimiter/uber/v2"
 
+	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/registry"
-	"github.com/micro/go-micro/v2/server"
 	"github.com/micro/go-plugins/registry/etcdv3/v2"
 )
 
@@ -22,12 +22,12 @@ type grpcServer struct {
 
 // 注册服务
 func Init(c config.Provider, srv *service.Service) {
-	opts := []server.Option{
-		server.Name(c.Name()),
-		server.Version(c.Version()),
-		server.RegisterTTL(c.RegisterTTL()),
-		server.RegisterInterval(c.RegisterInterval()),
-		server.Address(c.Address()),
+	opts := []micro.Option{
+		micro.Name(c.Name()),
+		micro.Version(c.Version()),
+		micro.RegisterTTL(c.RegisterTTL()),
+		micro.RegisterInterval(c.RegisterInterval()),
+		micro.Address(c.Address()),
 	}
 
 	// 判断是否使用了etcd作为服务注册
@@ -41,31 +41,26 @@ func Init(c config.Provider, srv *service.Service) {
 
 			op.Addrs = addresses
 		})
-		opts = append(opts, server.Registry(etcdv3Registry))
+		opts = append(opts, micro.Registry(etcdv3Registry))
 	}
 
-	wrapHandlers := []server.Option{
-		server.WrapHandler(ecode.MicroHandlerFunc),
-		server.WrapHandler(ratelimit.NewHandlerWrapper(1024)),
-	}
-	opts = append(opts, wrapHandlers...)
-
-	microServer := server.NewServer(opts...)
-	if err := microServer.Init(); err != nil {
-		panic("unable to initialize service:" + err.Error())
-	}
+	opts = append(opts, micro.WrapHandler(
+		ratelimit.NewHandlerWrapper(1024),
+		ecode.MicroHandlerFunc,
+	))
+	microServer := micro.NewService(opts...)
+	microServer.Init()
 
 	s := &grpcServer{
 		s: srv,
 	}
 
-	if err := api.RegisterChatHandler(microServer, s); err != nil {
+	if err := api.RegisterChatHandler(microServer.Server(), s); err != nil {
 		panic("unable to register grpc service:" + err.Error())
 	}
 
-	// Run service
 	go func() {
-		if err := microServer.Start(); err != nil {
+		if err := microServer.Run(); err != nil {
 			panic("unable to start service:" + err.Error())
 		}
 	}()

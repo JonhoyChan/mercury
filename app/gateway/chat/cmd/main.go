@@ -7,7 +7,7 @@ import (
 	"outgoing/app/gateway/chat/config"
 	"outgoing/app/gateway/chat/server/grpc"
 	"outgoing/app/gateway/chat/server/http"
-	"outgoing/app/gateway/chat/session"
+	"outgoing/app/gateway/chat/service"
 	"outgoing/x"
 	"outgoing/x/log"
 	"path/filepath"
@@ -42,7 +42,9 @@ func main() {
 	lvl, _ := log.LvlFromString(c.LogMode())
 	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.TerminalFormat(true))))
 
-	http.Init(c)
+	srv := service.NewService(c.Logger())
+
+	http.Init(c, srv)
 	grpc.Init(c)
 
 	// Signal handler
@@ -53,7 +55,7 @@ func main() {
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
 			log.Info("[ChatGateway] service shutdown")
-			session.GlobalSessionStore.Shutdown()
+			srv.SessionStore.Shutdown()
 			return
 		case syscall.SIGHUP:
 		default:
@@ -61,3 +63,4 @@ func main() {
 		}
 	}
 }
+

@@ -13,12 +13,12 @@ func (s *Service) Register(ctx context.Context, mobile, ip string) (string, stri
 	uid := s.uidGen.Get()
 	// Cockroach不支持uint64类型
 	id := s.uidGen.DecodeUid(uid)
-	vid, err := s.persister.User().Register(ctx, id, uid, mobile, avatar, ip)
+	oid, err := s.persister.User().Register(ctx, id, uid, mobile, avatar, ip)
 	if err != nil {
 		return "", "", err
 	}
 
-	return uid.UID(), vid, nil
+	return uid.UID(), oid, nil
 }
 
 // 用户通过手机号码登录
@@ -37,7 +37,7 @@ func (s *Service) LoginViaMobile(ctx context.Context, mobile, captcha, password,
 	}
 
 	uid := s.uidGen.EncodeInt64(uc.ID)
-	return uid.UID(), uc.VID, nil
+	return uid.UID(), uc.OID, nil
 }
 
 // 用户通过VID登录

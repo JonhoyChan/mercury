@@ -17,17 +17,22 @@ import (
 	"outgoing/x/websocket"
 )
 
-var GlobalSessionStore = NewSessionStore()
+type Store interface {
+	NewSession(ctx context.Context, conn interface{}, serverID string, deleteSession func(s *Session))
+	Get(sid string) *Session
+	Delete(s *Session)
+	Shutdown()
+}
 
 // SessionStore holds live sessions. Long polling sessions are stored in a linked list with
 // most recent sessions on top. In addition all sessions are stored in a map indexed by session ID.
-type SessionStore struct {
+type store struct {
 	cache Cache
 }
 
 // NewSessionStore initializes a session store.
-func NewSessionStore() *SessionStore {
-	ss := &SessionStore{
+func NewStore() *store {
+	ss := &store{
 		cache: NewDefaultCache(),
 	}
 
@@ -38,7 +43,7 @@ func NewSessionStore() *SessionStore {
 }
 
 // NewSession creates a new session and saves it to the session store.
-func (ss *SessionStore) NewSession(ctx context.Context, conn interface{}, serverID string) {
+func (ss *store) NewSession(ctx context.Context, conn interface{}, serverID string, deleteSession func(s *Session)) {
 	var s Session
 	s.ctx = ctx
 	s.sid = ksuid.New().String()
@@ -67,7 +72,7 @@ func (ss *SessionStore) NewSession(ctx context.Context, conn interface{}, server
 	if s.proto == WEBSOCKET {
 		// Do work in goroutines to return from serveWebSocket() to release file pointers.
 		// Otherwise "too many open files" will happen.
-		go s.readLoop()
+		go s.readLoop(deleteSession)
 		go s.writeLoop()
 
 		log.Info("[Websocket] session stored", "sid", s.sid, "count", ss.cache.Length())
@@ -75,12 +80,12 @@ func (ss *SessionStore) NewSession(ctx context.Context, conn interface{}, server
 }
 
 // Get fetches a session from store by session ID.
-func (ss *SessionStore) Get(sid string) *Session {
+func (ss *store) Get(sid string) *Session {
 	return ss.cache.Load(sid)
 }
 
 // Delete removes session from store.
-func (ss *SessionStore) Delete(s *Session) {
+func (ss *store) Delete(s *Session) {
 	ss.cache.Delete(s.sid)
 	if s.proto == WEBSOCKET {
 		log.Info("[Websocket] session deleted", "sid", s.sid, "count", ss.cache.Length())
@@ -89,7 +94,7 @@ func (ss *SessionStore) Delete(s *Session) {
 
 // Shutdown terminates sessionStore. No need to clean up.
 // Don't send to clustered sessions, their servers are not being shut down.
-func (ss *SessionStore) Shutdown() {
+func (ss *store) Shutdown() {
 	ss.cache.Shutdown()
 	log.Debug(x.Sprintf("[SessionStore] shut down. %d sessions terminated", ss.cache.Length()))
 }

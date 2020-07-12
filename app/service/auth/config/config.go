@@ -12,12 +12,12 @@ func Init(configFile string) {
 	// enable ability to specify configuration file via flag
 	v.SetConfigFile(configFile)
 
-	v.SetDefault(config.ViperKeyServiceName, "srv.auth")
+	v.SetDefault(config.ViperKeyServiceName, "service.auth")
 	v.SetDefault(config.ViperKeyVersion, "latest")
 	v.SetDefault(config.ViperKeyRegisterTTL, "30s")
 	v.SetDefault(config.ViperKeyRegisterInterval, "15s")
 	v.SetDefault(config.ViperKeyHost, "0.0.0.0")
-	v.SetDefault(config.ViperKeyPort, 19000)
+	v.SetDefault(config.ViperKeyPort, 10011)
 
 	// If a configuration file is found, read it in.
 	if err := v.ReadInConfig(); err != nil {

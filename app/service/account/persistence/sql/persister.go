@@ -1,8 +1,8 @@
 package sql
 
 import (
-	"outgoing/app/service/main/account/persistence"
-	"outgoing/app/service/main/account/persistence/cache"
+	"outgoing/app/service/account/persistence"
+	"outgoing/app/service/account/persistence/cache"
 	"outgoing/x/database/sqlx"
 	"outgoing/x/log"
 	"outgoing/x/password"

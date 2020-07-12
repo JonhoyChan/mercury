@@ -47,10 +47,6 @@ type AccountService interface {
 	Register(ctx context.Context, in *RegisterReq, opts ...client.CallOption) (*RegisterResp, error)
 	// 用户登录
 	Login(ctx context.Context, in *LoginReq, opts ...client.CallOption) (*LoginResp, error)
-	//
-	GetUser(ctx context.Context, in *GetUserReq, opts ...client.CallOption) (*GetUserResp, error)
-	//
-	GetUsers(ctx context.Context, in *GetUsersReq, opts ...client.CallOption) (*GetUsersResp, error)
 }
 
 type accountService struct {
@@ -85,26 +81,6 @@ func (c *accountService) Login(ctx context.Context, in *LoginReq, opts ...client
 	return out, nil
 }
 
-func (c *accountService) GetUser(ctx context.Context, in *GetUserReq, opts ...client.CallOption) (*GetUserResp, error) {
-	req := c.c.NewRequest(c.name, "Account.GetUser", in)
-	out := new(GetUserResp)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *accountService) GetUsers(ctx context.Context, in *GetUsersReq, opts ...client.CallOption) (*GetUsersResp, error) {
-	req := c.c.NewRequest(c.name, "Account.GetUsers", in)
-	out := new(GetUsersResp)
-	err := c.c.Call(ctx, req, out, opts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
 // Server API for Account service
 
 type AccountHandler interface {
@@ -112,18 +88,12 @@ type AccountHandler interface {
 	Register(context.Context, *RegisterReq, *RegisterResp) error
 	// 用户登录
 	Login(context.Context, *LoginReq, *LoginResp) error
-	//
-	GetUser(context.Context, *GetUserReq, *GetUserResp) error
-	//
-	GetUsers(context.Context, *GetUsersReq, *GetUsersResp) error
 }
 
 func RegisterAccountHandler(s server.Server, hdlr AccountHandler, opts ...server.HandlerOption) error {
 	type account interface {
 		Register(ctx context.Context, in *RegisterReq, out *RegisterResp) error
 		Login(ctx context.Context, in *LoginReq, out *LoginResp) error
-		GetUser(ctx context.Context, in *GetUserReq, out *GetUserResp) error
-		GetUsers(ctx context.Context, in *GetUsersReq, out *GetUsersResp) error
 	}
 	type Account struct {
 		account
@@ -142,12 +112,4 @@ func (h *accountHandler) Register(ctx context.Context, in *RegisterReq, out *Reg
 
 func (h *accountHandler) Login(ctx context.Context, in *LoginReq, out *LoginResp) error {
 	return h.AccountHandler.Login(ctx, in, out)
-}
-
-func (h *accountHandler) GetUser(ctx context.Context, in *GetUserReq, out *GetUserResp) error {
-	return h.AccountHandler.GetUser(ctx, in, out)
-}
-
-func (h *accountHandler) GetUsers(ctx context.Context, in *GetUsersReq, out *GetUsersResp) error {
-	return h.AccountHandler.GetUsers(ctx, in, out)
 }

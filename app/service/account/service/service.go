@@ -2,9 +2,11 @@ package service
 
 import (
 	"outgoing/app/service/account/config"
+	"outgoing/app/service/account/entity"
 	"outgoing/app/service/account/persistence"
 	"outgoing/app/service/account/persistence/cache"
 	"outgoing/app/service/account/persistence/sql"
+	"outgoing/x/database/orm"
 	"outgoing/x/database/redis"
 	"outgoing/x/database/sqlx"
 	"outgoing/x/log"
@@ -50,21 +52,21 @@ func (s *Service) withPersister() error {
 	bc.Reset()
 	return errors.WithStack(
 		backoff.Retry(func() error {
-			//gormDB, err := orm.NewORM(s.config)
-			//if err != nil {
-			//	s.log.Warn("unable to initialize the persister, retrying.", "error", err)
-			//	return err
-			//}
-			//// TODO 开发时使用，后续删除
-			//gormDB.AutoMigrate(
-			//	new(entity.User),
-			//	new(entity.UserAuth),
-			//	new(entity.UserLocation),
-			//	new(entity.UserLoginLog),
-			//	new(entity.UserRegisterLog),
-			//	new(entity.UserOperationLog),
-			//	new(entity.Devices),
-			//)
+			gormDB, err := orm.NewORM(s.config)
+			if err != nil {
+				s.log.Warn("unable to initialize the persister, retrying.", "error", err)
+				return err
+			}
+			// TODO 开发时使用，后续删除
+			gormDB.AutoMigrate(
+				new(entity.User),
+				new(entity.UserAuth),
+				new(entity.UserLocation),
+				new(entity.UserLoginLog),
+				new(entity.UserRegisterLog),
+				new(entity.UserOperationLog),
+				new(entity.Devices),
+			)
 			db, err := sqlx.Open(s.config)
 			if err != nil {
 				s.log.Error("unable to initialize the persister for sqlx, retrying", "error", err)

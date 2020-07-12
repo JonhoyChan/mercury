@@ -1,0 +1,33 @@
+service_name: service.chat.logic
+version: latest
+register_ttl: 30s
+register_interval: 15s
+host: 0.0.0.0
+port: 10001
+
+log:
+  # Log level(trace,debug,info,warn,error)
+  mode: debug
+
+registry:
+  etcd:
+    enable: flase
+    addresses:
+      - 192.168.88.88:32769
+      - 192.168.88.88:32771
+      - 192.168.88.88:32773
+    timeout: 5s
+
+redis:
+  address: 192.168.88.88:16379
+  username:
+  password:
+  db: 1
+  timeout: 120s
+
+broker:
+  stan:
+    enabled: true
+    addrs: "nats://192.168.13.119:4222"
+    clusterID: test-cluster
+    durableName: outgoing-durable

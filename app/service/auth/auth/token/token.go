@@ -6,11 +6,11 @@ import (
 	"crypto/sha256"
 	"encoding/binary"
 	"encoding/hex"
-	"time"
-	"outgoing/app/service/main/auth/api"
+	"outgoing/app/service/auth/api"
 	"outgoing/x/config"
 	"outgoing/x/ecode"
 	"outgoing/x/types"
+	"time"
 )
 
 // authenticator is a singleton instance of the authenticator.

@@ -1,9 +1,9 @@
-service_name: srv.auth
+service_name: service.auth
 version: latest
 register_ttl: 30s
 register_interval: 15s
 host: 0.0.0.0
-port: 19001
+port: 10011
 
 log:
   # Log level(trace,debug,info,warn,error)

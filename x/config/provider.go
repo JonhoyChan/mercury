@@ -35,7 +35,6 @@ type AuthenticatorProvider interface {
 }
 
 type DefaultProvider interface {
-	ID() string
 	Logger() log.Logger
 	Name() string
 	Version() string

@@ -3,12 +3,12 @@ package jwt
 import (
 	"bytes"
 	"encoding/binary"
-	"time"
-	"outgoing/app/service/main/auth/api"
-	"outgoing/app/service/main/auth/persistence"
+	"outgoing/app/service/auth/api"
+	"outgoing/app/service/auth/persistence"
 	"outgoing/x/config"
 	"outgoing/x/ecode"
 	"outgoing/x/types"
+	"time"
 
 	"github.com/dgrijalva/jwt-go"
 )

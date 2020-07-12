@@ -24,7 +24,7 @@ type httpServer struct {
 }
 
 // 注册服务
-func Init(c config.Provider) {
+func Init(c config.Provider, srv *service.Service) {
 	opts := []web.Option{
 		web.Name(c.Name()),
 		web.Version(c.Version()),
@@ -53,8 +53,6 @@ func Init(c config.Provider) {
 	if err := microWeb.Init(); err != nil {
 		panic("unable to  initialize service:" + err.Error())
 	}
-
-	srv := service.NewService(c.Logger())
 
 	s := &httpServer{
 		e: gin.New(),

@@ -1,9 +1,9 @@
 package token
 
 import (
-	"testing"
-	"outgoing/app/service/main/auth/api"
+	"outgoing/app/service/auth/api"
 	"outgoing/x/config"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -41,12 +41,17 @@ func TestHasherArgon2_Authenticate(t *testing.T) {
 	handler, err := NewAuthenticator(c)
 	assert.NoError(t, err)
 
-	record, err := handler.Authenticate(token)
+	var record *api.Record
+	record, token, err = handler.Authenticate(token)
 	assert.NoError(t, err)
 
-	t.Logf("lifetime: %v", record.Lifetime)
+	if record != nil {
+		t.Logf("lifetime: %v", record.Lifetime)
 
-	assert.Equal(t, "uid2O33xQCLKAY", record.Uid)
-	assert.Equal(t, api.AuthLevel_AuthLevelRoot, record.Level)
-	assert.Equal(t, api.UserState_UserStateNormal, record.State)
+		assert.Equal(t, "uid2O33xQCLKAY", record.Uid)
+		assert.Equal(t, api.AuthLevel_AuthLevelRoot, record.Level)
+		assert.Equal(t, api.UserState_UserStateNormal, record.State)
+	} else if token != "" {
+		t.Logf("refresh token: %v", token)
+	}
 }

@@ -7,7 +7,6 @@ type RegisterReq struct {
 }
 
 type RegisterResp struct {
-	VID   string `json:"vid"`
 	Token string `json:"token"`
 }
 
@@ -18,6 +17,5 @@ type LoginReq struct {
 }
 
 type LoginResp struct {
-	VID   string `json:"vid"`
 	Token string `json:"token"`
 }

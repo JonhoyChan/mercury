@@ -1,9 +1,10 @@
 package cache
 
 import (
-	"github.com/go-redis/redis/v7"
 	"outgoing/x"
 	"time"
+
+	"github.com/go-redis/redis/v7"
 )
 
 const (
@@ -34,7 +35,7 @@ func (c *Cache) AddMapping(uid, sid, serverID string) (err error) {
 		x.Sprintf(hashUserSessionServerKey, uid),
 		x.Sprintf(stringSessionServerKey, sid),
 	}
-	args := []interface{}{sid, serverID, mappingExpire}
+	args := []interface{}{sid, serverID, int32(mappingExpire)}
 	err = redis.NewScript(addMappingLUA).Run(c.client, keys, args...).Err()
 	return
 }

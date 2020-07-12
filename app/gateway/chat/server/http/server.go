@@ -3,7 +3,7 @@ package http
 import (
 	"net/http"
 	"outgoing/app/gateway/chat/config"
-	"outgoing/app/gateway/chat/session"
+	"outgoing/app/gateway/chat/service"
 	"outgoing/app/gateway/chat/stats"
 	"outgoing/x"
 	"outgoing/x/ecode"
@@ -21,12 +21,13 @@ import (
 )
 
 type httpServer struct {
-	id string
-	e  *gin.Engine
-	l  log.Logger
+	id  string
+	e   *gin.Engine
+	l   log.Logger
+	srv *service.Service
 }
 
-func Init(c config.Provider) {
+func Init(c config.Provider, srv *service.Service) {
 	opts := []web.Option{
 		web.Id(c.ID()),
 		web.Name(c.Name()),
@@ -57,9 +58,10 @@ func Init(c config.Provider) {
 	}
 
 	s := &httpServer{
-		id: microWeb.Options().Id,
-		e:  gin.New(),
-		l:  c.Logger(),
+		id:  microWeb.Options().Id,
+		e:   gin.New(),
+		l:   c.Logger(),
+		srv: srv,
 	}
 	s.middleware()
 	s.setupRouter()
@@ -122,5 +124,5 @@ func (s *httpServer) serveWebSocket(c *ginx.Context) {
 		return
 	}
 
-	session.GlobalSessionStore.NewSession(c, conn, s.id)
+	s.srv.SessionStore.NewSession(c, conn, s.id, s.srv.SessionStore.Delete)
 }

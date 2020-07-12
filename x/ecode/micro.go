@@ -2,6 +2,7 @@ package ecode
 
 import (
 	"context"
+	"outgoing/x/log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -88,6 +89,7 @@ func MicroCallFunc(fn client.CallFunc) client.CallFunc {
 	return func(ctx context.Context, node *registry.Node, req client.Request, rsp interface{}, opts client.CallOptions) error {
 		err := fn(ctx, node, req, rsp, opts)
 		if err != nil {
+			log.Error(err.Error())
 			return ParseMicroError(err)
 		}
 		return nil

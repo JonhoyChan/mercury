@@ -3,15 +3,15 @@ package sql
 import (
 	"context"
 	"fmt"
-	"time"
-	"outgoing/app/service/main/account/model"
-	"outgoing/app/service/main/account/persistence"
+	"outgoing/app/service/account/model"
+	"outgoing/app/service/account/persistence"
 	"outgoing/x"
 	"outgoing/x/database/sqlx"
 	"outgoing/x/ecode"
 	"outgoing/x/log"
 	"outgoing/x/password"
 	"outgoing/x/types"
+	"time"
 )
 
 type userPersister struct {
@@ -24,11 +24,11 @@ type userPersister struct {
 const (
 	insertUserSQL = `
 INSERT INTO
-    public.account (
+    public.user (
 		id,
         created_at,
         updated_at,
-        vid,
+        oid,
         nick_name,
         avatar,
         gender,
@@ -72,15 +72,27 @@ VALUES
 	getCredentialViaMobileSQL = `
 SELECT
     u.id,
-    u.vid,
+    u.oid,
 	u.state,
     ua.credential
 FROM
-    public.account u
+    public.user u
     JOIN public.user_auth ua ON u.id = ua.user_id
 WHERE
     u.mobile ~ $1
-    AND ua.identity_type = $2
+	AND u.state = $2
+    AND ua.identity_type = $3
+limit
+    1;
+`
+
+	isExistSQL = `
+SELECT
+    1
+FROM
+    public.user
+WHERE
+    mobile = $1
 limit
     1;
 `
@@ -112,7 +124,7 @@ func (p *userPersister) Register(_ context.Context, id int64, uid types.Uid, mob
 	}()
 
 	var isExist int
-	if err = tx.QueryRow("SELECT 1 FROM public.account WHERE mobile = $1 limit 1;", mobile).Scan(&isExist); err != nil && err != sqlx.ErrNoRows {
+	if err = tx.QueryRow(isExistSQL, mobile).Scan(&isExist); err != nil && err != sqlx.ErrNoRows {
 		fmt.Println(err.Error())
 		return "", err
 	}
@@ -124,16 +136,16 @@ func (p *userPersister) Register(_ context.Context, id int64, uid types.Uid, mob
 
 	now := time.Now().Unix()
 	// 生成默认vid，后续可由用户自行修改，只能改一次还是限制一段时间内改一次待定
-	vid := uid.PrefixId("vid")
+	oid := uid.PrefixId("oid")
 
-	if err := tx.Exec(insertUserSQL, 1, id, now, vid, uid.String32(), avatar, mobile); err != nil {
+	if err := tx.Exec(insertUserSQL, 1, id, now, oid, uid.String32(), avatar, mobile); err != nil {
 		return "", err
 	}
 
 	pwd, _ := p.hasher.Generate("")
 	// 将用户手机与vid保存到用户授权表中，用户可使用两者其中一种+密码的方式进行登录
 	err = tx.Exec(insertUserAuthSQL, 2,
-		now, id, mobile, pwd, vid,
+		now, id, mobile, pwd, oid,
 	)
 	if err != nil {
 		return "", err
@@ -149,17 +161,17 @@ func (p *userPersister) Register(_ context.Context, id int64, uid types.Uid, mob
 
 	go p.createUserRegisterLog(now, id, 1, ip)
 
-	return vid, nil
+	return oid, nil
 }
 
-func (p *userPersister) cleanFailedCount(vid string) {
-	if err := p.c.CleanFailedCount(vid); err != nil {
+func (p *userPersister) cleanFailedNumber(vid string) {
+	if err := p.c.CleanFailedNumber(vid); err != nil {
 		p.log.Warn("failed to clean account login failed count", "error", err)
 	}
 }
 
 func (p *userPersister) LoginViaPassword(_ context.Context, uc *model.UserCredential, pwd, version, deviceID, ip string) error {
-	ok, ttl, err := p.c.ContinueLogin(uc.VID)
+	ok, ttl, err := p.c.ContinueLogin(uc.OID)
 	if err != nil {
 		return err
 	}
@@ -170,7 +182,7 @@ func (p *userPersister) LoginViaPassword(_ context.Context, uc *model.UserCreden
 
 	now := time.Now().Unix()
 	if err := p.hasher.Compare(pwd, uc.Credential); err != nil {
-		remain, err := p.c.IncreaseFailedCount(uc.VID)
+		remain, err := p.c.IncreaseFailedNumber(uc.OID)
 		if err != nil {
 			return err
 		}
@@ -178,7 +190,7 @@ func (p *userPersister) LoginViaPassword(_ context.Context, uc *model.UserCreden
 		return ecode.Wrap(ecode.ErrLoginFailed, x.Sprintf("账号或密码错误，还剩%d次重试机会", remain))
 	}
 
-	go p.cleanFailedCount(uc.VID)
+	go p.cleanFailedNumber(uc.OID)
 	go p.createUserLoginLog(now, uc.ID, version, deviceID, ip, 1, 1)
 	return nil
 }
@@ -190,11 +202,11 @@ func (p *userPersister) LoginViaCaptcha(_ context.Context, captcha, version, dev
 func (p *userPersister) GetCredentialViaMobile(mobile string) (*model.UserCredential, error) {
 	var (
 		id              int64
-		vid, credential string
+		oid, credential string
 		state           uint8
 	)
-	err := p.db.QueryRow(getCredentialViaMobileSQL, mobile+`$`, 1).
-		Scan(&id, &vid, &state, &credential)
+	err := p.db.QueryRow(getCredentialViaMobileSQL, mobile+`$`, 0, 1).
+		Scan(&id, &oid, &state, &credential)
 	if err != nil {
 		if err == sqlx.ErrNoRows {
 			return nil, ecode.Wrap(ecode.ErrUserNotFound, "用户不存在")
@@ -202,18 +214,9 @@ func (p *userPersister) GetCredentialViaMobile(mobile string) (*model.UserCreden
 		return nil, err
 	}
 
-	if state != 0 {
-		switch state {
-		case 1: // 用户被暂停
-			// todo something
-		case 2: // 用户已注销
-			return nil, ecode.Wrap(ecode.ErrUserNotFound, "用户已注销")
-		}
-	}
-
 	userCredential := &model.UserCredential{
 		ID:         id,
-		VID:        vid,
+		OID:        oid,
 		Credential: credential,
 	}
 

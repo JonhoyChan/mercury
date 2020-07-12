@@ -1,9 +1,9 @@
 package jwt
 
 import (
-	"testing"
-	"outgoing/app/service/main/auth/api"
+	"outgoing/app/service/auth/api"
 	"outgoing/x/config"
+	"testing"
 
 	"github.com/stretchr/testify/assert"
 )

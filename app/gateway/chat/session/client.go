@@ -2,13 +2,14 @@ package session
 
 import (
 	"context"
-	"github.com/micro/go-micro/v2/client"
-	"github.com/micro/go-micro/v2/client/grpc"
 	accountApi "outgoing/app/service/account/api"
 	authApi "outgoing/app/service/auth/api"
 	chatApi "outgoing/app/service/chat/api"
 	"outgoing/x/ecode"
 	"outgoing/x/types"
+
+	"github.com/micro/go-micro/v2/client"
+	"github.com/micro/go-micro/v2/client/grpc"
 )
 
 var globalClient = NewClient()
@@ -29,8 +30,8 @@ func NewClient() *Client {
 	c := grpc.NewClient(opts...)
 
 	return &Client{
-		accountService: accountApi.NewAccountService("account.srv", c),
-		authService:    authApi.NewAuthService("auth.srv", c),
+		accountService: accountApi.NewAccountService("service.account", c),
+		authService:    authApi.NewAuthService("service.auth", c),
 		chatService:    chatApi.NewChatService("service.chat.logic", c),
 	}
 }
@@ -53,7 +54,7 @@ func (c *Client) authenticate(ctx context.Context, token, sid, serverID string) 
 		return 0, 0, err
 	}
 
-	return types.ParseUid(resp.Record.Uid), types.AuthLevel(resp.Record.Level), nil
+	return types.ParseUserUID(resp.Record.Uid), types.AuthLevel(resp.Record.Level), nil
 }
 
 func (c *Client) heartbeat(ctx context.Context, uid, sid, serverID string) (err error) {

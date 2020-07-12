@@ -2,6 +2,7 @@ package session
 
 import (
 	"encoding/json"
+	"fmt"
 	"outgoing/app/gateway/chat/api"
 	"outgoing/x/ecode"
 )
@@ -12,7 +13,11 @@ type ServerMessage struct {
 }
 
 func NoErr(mid string, timestamp int64) []byte {
-	data, _ := api.NewResponse(ecode.OK, mid, timestamp).Marshal()
+	//data, _ := api.NewResponse(ecode.OK, mid, timestamp).Marshal()
+	data, err := json.Marshal(api.NewResponse(ecode.OK, mid, timestamp))
+	if err != nil {
+		fmt.Println(err.Error())
+	}
 	return data
 }
 
@@ -38,7 +43,8 @@ func ErrAuthRequired(mid string, timestamp int64) []byte {
 
 // ErrAuthFailed authentication failed.
 func ErrAuthFailed(mid string, timestamp int64) []byte {
-	data, _ := api.NewResponse(ecode.ErrUnauthorized.ResetMessage("authentication failed"), mid, timestamp).Marshal()
+	//data, _ := api.NewResponse(ecode.ErrUnauthorized.ResetMessage("authentication failed"), mid, timestamp).Marshal()
+	data, _ := json.Marshal(api.NewResponse(ecode.ErrUnauthorized.ResetMessage("authentication failed"), mid, timestamp))
 	return data
 }
 

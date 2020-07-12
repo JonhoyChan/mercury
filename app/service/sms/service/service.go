@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"outgoing/app/service/main/sms/config"
+	"outgoing/app/service/sms/config"
 	"outgoing/x/log"
 
 	jsoniter "github.com/json-iterator/go"

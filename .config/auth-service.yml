@@ -1,0 +1,42 @@
+service_name: service.auth
+version: latest
+register_ttl: 30s
+register_interval: 15s
+host: 0.0.0.0
+port: 10011
+
+log:
+  # Log level(trace,debug,info,warn,error)
+  mode: debug
+
+registry:
+  etcd:
+    enable: flase
+    addresses:
+      - 192.168.88.88:32769
+      - 192.168.88.88:32771
+      - 192.168.88.88:32773
+    timeout: 5s
+
+redis:
+  address: 192.168.88.88:16379
+  password:
+  db: 5
+
+authenticator:
+  token:
+    enable: true
+    # Lifetime of a security token in seconds. 1209600 = 2 weeks.
+    expire: 1209600
+    # Serial number of the token. Can be used to invalidate all issued tokens at once.
+    serial_number: 1
+    # Secret key (HMAC salt) for signing the tokens.
+    key: wfaY2RgF2S1OQI/ZlK+LSrp1KB2jwAdGAIHQ7JZn+Kc=
+  jwt:
+    enable: true
+    # Lifetime of a security token in seconds. 1209600 = 2 weeks.
+    expire: 1209600
+    # Serial number of the token. Can be used to invalidate all issued tokens at once.
+    serial_number: 1
+    # Secret key for signing the tokens.
+    key: AG5s4d68asg7SF5sdf454ghj

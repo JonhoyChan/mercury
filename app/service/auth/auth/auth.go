@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"outgoing/app/service/main/auth/api"
-	"outgoing/app/service/main/auth/auth/jwt"
-	"outgoing/app/service/main/auth/auth/token"
-	"outgoing/app/service/main/auth/persistence"
+	"outgoing/app/service/auth/api"
+	"outgoing/app/service/auth/auth/jwt"
+	"outgoing/app/service/auth/auth/token"
+	"outgoing/app/service/auth/persistence"
 	"outgoing/x/config"
 )
 

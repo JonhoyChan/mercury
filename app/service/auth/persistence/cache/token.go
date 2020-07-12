@@ -1,9 +1,9 @@
 package cache
 
 import (
-	"time"
 	"outgoing/x"
 	"outgoing/x/ecode"
+	"time"
 )
 
 var (
@@ -13,7 +13,11 @@ var (
 // 获取用户Token
 func (c *Cache) GetAuthToken(uid string) string {
 	key := x.Sprintf(authTokenKey, uid)
-	return c.client.Get(key).String()
+	token, err := c.client.Get(key).Result()
+	if err != nil {
+		return ""
+	}
+	return token
 }
 
 // 保存用户Token

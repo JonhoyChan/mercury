@@ -88,10 +88,10 @@ type Session struct {
 	stop chan []byte
 }
 
-func (s *Session) readLoop() {
+func (s *Session) readLoop(deleteSession func(s *Session)) {
 	defer func() {
 		s.ws.Close()
-		GlobalSessionStore.Delete(s)
+		deleteSession(s)
 	}()
 
 	s.ws.SetReadLimit(MaxMessageSize)
@@ -237,14 +237,13 @@ func (s *Session) handshake(message *ServerMessage) []byte {
 	}
 
 	if s.version == 0 {
-		s.version = x.ParseVersion(req.Version)
-		if s.version == 0 {
+		version := x.ParseVersion(req.Version)
+		if version == 0 {
 			log.Debug("[Handshake] failed to parse version", "sid", s.sid)
 			return ErrMalformed(req.MID, message.Timestamp)
 		}
 		// Check version compatibility
-		if x.VersionCompare(s.version, minSupportedVersionValue) < 0 {
-			s.version = 0
+		if x.VersionCompare(version, minSupportedVersionValue) < 0 {
 			log.Debug("[Handshake] unsupported version", "sid", s.sid)
 			return ErrVersionNotSupported(req.MID, message.Timestamp)
 		}
@@ -253,18 +252,19 @@ func (s *Session) handshake(message *ServerMessage) []byte {
 			return ErrMalformed(req.MID, message.Timestamp)
 		}
 
+		uid, authLevel, err := globalClient.authenticate(s.ctx, req.Token, s.sid, s.serverID)
+		if err != nil {
+			log.Error("[Authenticate] failed to authenticate token", log.Ctx{"error": err, "sid": s.sid, "token": req.Token})
+			return ErrAuthFailed(req.MID, message.Timestamp)
+		}
+
 		// Set user agent & platform in the beginning of the session.
 		// Don't change them later.
+		s.version = version
 		s.userAgent = req.UserAgent
 		s.platform = req.Platform
 		if s.platform == "" {
 			s.platform = x.PlatformFromUA(req.UserAgent)
-		}
-
-		uid, authLevel, err := globalClient.authenticate(s.ctx, req.Token, s.sid, s.serverID)
-		if err != nil {
-			log.Error("[Authenticate] failed to authenticate token", log.Ctx{"error": err, "sid": s.sid, "token": ""})
-			return ErrAuthFailed(req.MID, message.Timestamp)
 		}
 
 		// Only set uid in the first time authenticate.
@@ -371,7 +371,11 @@ func (s *Session) serialize(p *Proto, body []byte) []byte {
 	}
 	p.Body = body
 	//data, _ := api.Serialize(p)
-	data, _ := json.Marshal(&p)
+	data, err := json.Marshal(&p)
+	if err != nil {
+		log.Error("marshal error", log.Ctx{"error": err})
+		return nil
+	}
 	return data
 }
 

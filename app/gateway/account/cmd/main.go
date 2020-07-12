@@ -6,6 +6,7 @@ import (
 	"os/signal"
 	"outgoing/app/gateway/account/config"
 	"outgoing/app/gateway/account/http"
+	"outgoing/app/gateway/account/service"
 	"outgoing/x"
 	"outgoing/x/log"
 	"path/filepath"
@@ -36,9 +37,11 @@ func main() {
 
 	// Initialize log
 	lvl, _ := log.LvlFromString(c.LogMode())
-	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.LogfmtFormat())))
+	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.TerminalFormat(true))))
 
-	http.Init(c)
+	srv := service.NewService()
+
+	http.Init(c, srv)
 
 	// Signal handler
 	signalChan := make(chan os.Signal, 1)

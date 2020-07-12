@@ -17,7 +17,7 @@ func Init(configFile string) {
 	v.SetDefault(config.ViperKeyRegisterTTL, "30s")
 	v.SetDefault(config.ViperKeyRegisterInterval, "15s")
 	v.SetDefault(config.ViperKeyHost, "0.0.0.0")
-	v.SetDefault(config.ViperKeyPort, 19000)
+	v.SetDefault(config.ViperKeyPort, 10010)
 
 	// If a configuration file is found, read it in.
 	if err := v.ReadInConfig(); err != nil {
