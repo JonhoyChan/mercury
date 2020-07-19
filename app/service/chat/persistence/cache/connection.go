@@ -40,7 +40,7 @@ func (c *Cache) AddMapping(uid, sid, serverID string) (err error) {
 	return
 }
 
-// Set the expiration time of the mapping
+// Set the expiration time of the mapping-
 func (c *Cache) ExpireMapping(uid, sid string) (bool, error) {
 	var (
 		expired bool

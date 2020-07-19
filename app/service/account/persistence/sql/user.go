@@ -32,11 +32,10 @@ INSERT INTO
         nick_name,
         avatar,
         gender,
-        mobile,
-        state
+        mobile
     )
 VALUES
-    ($1, $2, $2, $3, $4, $5, 0, $6, 0);
+    ($1, $2, $2, $3, $4, $5, 0, $6);
 `
 
 	insertUserAuthSQL = `
@@ -45,14 +44,25 @@ INSERT INTO
         created_at,
         updated_at,
         user_id,
-        identity_type,
         identifier,
         credential,
         last_at
     )
 VALUES
-    ($1, $1, $2, 1, $3, $4, $1),
-    ($1, $1, $2, 2, $5, $4, $1);
+    ($1, $1, $2, $3, $4, $1),
+    ($1, $1, $2, $5, $4, $1);
+`
+
+	insertUserStatusSQL = `
+INSERT INTO
+    public.user_status (
+        created_at,
+        updated_at,
+        user_id,
+        status
+    )
+VALUES
+    ($1, $1, $2, $3),
 `
 
 	insertUserRegisterLogSQL = `
@@ -73,15 +83,14 @@ VALUES
 SELECT
     u.id,
     u.oid,
-	u.state,
-    ua.credential
+    ua.credential,
+	us.status
 FROM
     public.user u
     JOIN public.user_auth ua ON u.id = ua.user_id
+	JOIN public.user_status us ON u.id = us.user_id
 WHERE
     u.mobile ~ $1
-	AND u.state = $2
-    AND ua.identity_type = $3
 limit
     1;
 `
@@ -135,7 +144,7 @@ func (p *userPersister) Register(_ context.Context, id int64, uid types.Uid, mob
 	}
 
 	now := time.Now().Unix()
-	// 生成默认vid，后续可由用户自行修改，只能改一次还是限制一段时间内改一次待定
+	// 生成默认oid，后续可由用户自行修改，只能改一次还是限制一段时间内改一次待定
 	oid := uid.PrefixId("oid")
 
 	if err := tx.Exec(insertUserSQL, 1, id, now, oid, uid.String32(), avatar, mobile); err != nil {
@@ -146,6 +155,13 @@ func (p *userPersister) Register(_ context.Context, id int64, uid types.Uid, mob
 	// 将用户手机与vid保存到用户授权表中，用户可使用两者其中一种+密码的方式进行登录
 	err = tx.Exec(insertUserAuthSQL, 2,
 		now, id, mobile, pwd, oid,
+	)
+	if err != nil {
+		return "", err
+	}
+
+	err = tx.Exec(insertUserStatusSQL, 1,
+		now, id, 0,
 	)
 	if err != nil {
 		return "", err
@@ -203,16 +219,18 @@ func (p *userPersister) GetCredentialViaMobile(mobile string) (*model.UserCreden
 	var (
 		id              int64
 		oid, credential string
-		state           uint8
+		status          uint8
 	)
-	err := p.db.QueryRow(getCredentialViaMobileSQL, mobile+`$`, 0, 1).
-		Scan(&id, &oid, &state, &credential)
+	err := p.db.QueryRow(getCredentialViaMobileSQL, mobile+`$`).
+		Scan(&id, &oid, &credential, &status)
 	if err != nil {
 		if err == sqlx.ErrNoRows {
 			return nil, ecode.Wrap(ecode.ErrUserNotFound, "用户不存在")
 		}
 		return nil, err
 	}
+
+	// TODO check user status
 
 	userCredential := &model.UserCredential{
 		ID:         id,
