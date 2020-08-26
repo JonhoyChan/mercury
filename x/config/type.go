@@ -39,22 +39,17 @@ type HasherArgon2Config struct {
 	KeyLength   uint32
 }
 
+type HasherBCryptConfig struct {
+	Cost int
+}
+
 type GeneratorUidConfig struct {
 	WorkID int64
 	Key    []byte
 }
 
 type AuthenticatorTokenConfig struct {
-	Enable       bool
 	Expire       int
 	SerialNumber int
 	Key          []byte
-}
-
-type AuthenticatorJWTConfig struct {
-	Enable       bool
-	Expire       int
-	SerialNumber int
-	Key          []byte
-	Issuer       string
 }

@@ -18,6 +18,20 @@ registry:
       - 192.168.88.88:32773
     timeout: 5s
 
+broker:
+  stan:
+    enabled: true
+    addrs: "nats://192.168.13.119:4222"
+    clusterID: test-cluster
+    durableName: outgoing-durable
+
+database:
+  driver: postgres
+  dsn: postgresql://root@192.168.120.88:26257/mercury?sslmode=disable
+  active: 10
+  idle: 5
+  idle_timeout: 4h
+
 redis:
   address: 192.168.120.88:16379
   username:
@@ -25,9 +39,21 @@ redis:
   db: 1
   timeout: 120s
 
-broker:
-  stan:
-    enabled: true
-    addrs: "nats://192.168.13.119:4222"
-    clusterID: test-cluster
-    durableName: outgoing-durable
+authenticator:
+  token:
+    # Lifetime of a security token in seconds. 1209600 = 2 weeks.
+    expire: 1209600
+    # Serial number of the token. Can be used to invalidate all issued tokens at once.
+    serial_number: 1
+    # Secret key (HMAC salt) for signing the tokens.
+    key: wfaY2RgF2S1OQI/ZlK+LSrp1KB2jwAdGAIHQ7JZn+Kc=
+
+hasher:
+  argon2:
+    memory: 8192
+    iterations: 2
+    parallelism: 4
+    salt_length: 16
+    key_length: 16
+  bcrypt:
+    cost: 10

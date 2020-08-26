@@ -2,18 +2,15 @@ package cache
 
 import (
 	"outgoing/x/database/redis"
-	"outgoing/x/log"
 )
 
 type Cache struct {
 	client *redis.Client
-	log    log.Logger
 }
 
-func NewCache(client *redis.Client, log log.Logger) *Cache {
+func NewCache(client *redis.Client) *Cache {
 	c := &Cache{
 		client: client,
-		log:    log.New("cache", "redis"),
 	}
 	return c
 }

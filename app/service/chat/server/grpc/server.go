@@ -30,7 +30,6 @@ func Init(c config.Provider, srv *service.Service) {
 		micro.Address(c.Address()),
 	}
 
-	// 判断是否使用了etcd作为服务注册
 	if c.Etcd().Enable {
 		etcdv3Registry := etcdv3.NewRegistry(func(op *registry.Options) {
 			var addresses []string
@@ -46,7 +45,7 @@ func Init(c config.Provider, srv *service.Service) {
 
 	opts = append(opts, micro.WrapHandler(
 		ratelimit.NewHandlerWrapper(1024),
-		ecode.MicroHandlerFunc,
+		srv.AuthenticateClientToken,
 	))
 	microServer := micro.NewService(opts...)
 	microServer.Init()
@@ -66,7 +65,44 @@ func Init(c config.Provider, srv *service.Service) {
 	}()
 }
 
-// Connect a connection
+func (s *grpcServer) GenerateToken(ctx context.Context, req *api.GenerateTokenReq, resp *api.TokenResp) error {
+	token, lifetime, err := s.s.GenerateToken(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	resp.Token = token
+	resp.Lifetime = lifetime
+	return nil
+}
+
+func (s *grpcServer) CreateClient(ctx context.Context, req *api.CreateClientReq, resp *api.CreateClientResp) error {
+	clientID, clientSecret, err := s.s.CreateClient(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	resp.ClientID = clientID
+	resp.ClientSecret = clientSecret
+	return nil
+}
+
+func (s *grpcServer) UpdateClient(ctx context.Context, req *api.UpdateClientReq, resp *api.Empty) error {
+	if err := s.s.UpdateClient(ctx, req); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *grpcServer) DeleteClient(ctx context.Context, req *api.DeleteClientReq, resp *api.Empty) error {
+	if err := s.s.DeleteClient(ctx); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *grpcServer) Connect(ctx context.Context, req *api.ConnectReq, resp *api.Empty) error {
 	if req.UID == "" || req.SID == "" || req.ServerID == "" {
 		return ecode.ErrWrongParameter
@@ -80,7 +116,6 @@ func (s *grpcServer) Connect(ctx context.Context, req *api.ConnectReq, resp *api
 	return nil
 }
 
-// Disconnect a connection
 func (s *grpcServer) Disconnect(ctx context.Context, req *api.DisconnectReq, resp *api.Empty) error {
 	if req.UID == "" || req.SID == "" {
 		return ecode.ErrWrongParameter
@@ -94,7 +129,6 @@ func (s *grpcServer) Disconnect(ctx context.Context, req *api.DisconnectReq, res
 	return nil
 }
 
-// Heartbeat a connection
 func (s *grpcServer) Heartbeat(ctx context.Context, req *api.HeartbeatReq, resp *api.Empty) error {
 	if req.UID == "" || req.SID == "" || req.ServerID == "" {
 		return ecode.ErrWrongParameter

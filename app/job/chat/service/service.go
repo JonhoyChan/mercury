@@ -53,6 +53,10 @@ func (s *Service) Close() {
 }
 
 func (s *Service) WatchComet() {
+	if s.registry == nil {
+		panic("registry is nil, please use the WithRegistry first")
+	}
+
 	if err := s.syncCometNodes(); err != nil {
 		panic("failed to sync comet nodes:" + err.Error())
 	}

@@ -1,0 +1,40 @@
+package sql
+
+import (
+	"outgoing/app/service/chat/persistence"
+	"outgoing/x/database/sqlx"
+)
+
+type Persister struct {
+	db     *sqlx.DB
+	client *clientPersister
+	user   *userPersister
+}
+
+func NewPersister(db *sqlx.DB) *Persister {
+	return &Persister{
+		db: db,
+		client: &clientPersister{
+			db: db,
+		},
+		user: &userPersister{
+			db: db,
+		},
+	}
+}
+
+func (p *Persister) Ping() error {
+	return p.db.Ping()
+}
+
+func (p *Persister) Close() error {
+	return p.db.Close()
+}
+
+func (p *Persister) Client() persistence.ClientPersister {
+	return p.client
+}
+
+func (p *Persister) User() persistence.UserPersister {
+	return p.user
+}

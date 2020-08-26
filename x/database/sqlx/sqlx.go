@@ -4,10 +4,10 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"io"
-	"reflect"
-	"time"
 	"outgoing/x/config"
 	"outgoing/x/log"
+	"reflect"
+	"time"
 
 	"github.com/pkg/errors"
 
@@ -21,6 +21,10 @@ var (
 type DB struct {
 	*sql.DB
 	rdbChan chan *sql.DB
+}
+
+func IsErrNoRows(err error) bool {
+	return err == ErrNoRows
 }
 
 func (db *DB) Close() error {

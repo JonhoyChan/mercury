@@ -44,6 +44,9 @@ const (
 	ViperKeyHasherArgon2SaltLength  = "hasher.argon2.salt_length"
 	ViperKeyHasherArgon2KeyLength   = "hasher.argon2.key_length"
 
+	// hasher.
+	ViperKeyHasherBCryptCost = "hasher.bcrypt.cost"
+
 	// generator uid
 	ViperKeyGeneratorUidWorkID = "generator.uid.work_id"
 	ViperKeyGeneratorUidKey    = "generator.uid.key"
@@ -53,11 +56,4 @@ const (
 	ViperKeyAuthenticatorTokenExpire       = "authenticator.token.expire"
 	ViperKeyAuthenticatorTokenSerialNumber = "authenticator.token.serial_number"
 	ViperKeyAuthenticatorTokenKey          = "authenticator.token.key"
-
-	// authenticator jwt
-	ViperKeyAuthenticatorJWTEnable       = "authenticator.jwt.enable"
-	ViperKeyAuthenticatorJWTExpire       = "authenticator.jwt.expire"
-	ViperKeyAuthenticatorJWTSerialNumber = "authenticator.jwt.serial_number"
-	ViperKeyAuthenticatorJWTKey          = "authenticator.jwt.key"
-	ViperKeyAuthenticatorJWTIssuer       = "authenticator.jwt.issuer"
 )

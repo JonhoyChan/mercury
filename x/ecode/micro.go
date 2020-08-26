@@ -33,21 +33,21 @@ func ParseMicroError(err error) error {
 	sep := ": "
 	if strings.Contains(microError, sep) {
 		e := strings.Split(microError, sep)
-		code, err := strconv.Atoi(e[1])
+		code, err := strconv.Atoi(e[0])
 		if err != nil {
 			return errInternal
 		}
 
-		return Code{code: code, message: e[0]}
+		return Code{code: code, message: e[1]}
 	}
 
 	return errInternal
 }
 
 func FormatMicroError(err error) error {
-	_, ok := errors.Cause(err).(Coder)
+	coder, ok := errors.Cause(err).(Coder)
 	if ok {
-		return err
+		return Wrap(coder, strconv.Itoa(coder.Code()))
 	} else {
 		return Wrap(ErrInternalServer, "服务器内部错误")
 	}
@@ -76,8 +76,7 @@ func RetryOnMicroError(ctx context.Context, req client.Request, retryCount int, 
 // 服务端 - 格式化成 ecode 错误
 func MicroHandlerFunc(fn server.HandlerFunc) server.HandlerFunc {
 	return func(ctx context.Context, req server.Request, rsp interface{}) error {
-		err := fn(ctx, req, rsp)
-		if err != nil {
+		if err := fn(ctx, req, rsp); err != nil {
 			return FormatMicroError(err)
 		}
 		return nil

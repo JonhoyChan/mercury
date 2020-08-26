@@ -5,6 +5,16 @@ import (
 	"time"
 )
 
+type DefaultProvider interface {
+	Logger() log.Logger
+	Name() string
+	Version() string
+	RegisterTTL() time.Duration
+	RegisterInterval() time.Duration
+	Address() string
+	LogMode() string
+}
+
 type RegistryProvider interface {
 	Etcd() *EtcdConfig
 }
@@ -23,6 +33,7 @@ type RedisProvider interface {
 
 type HasherProvider interface {
 	HasherArgon2() *HasherArgon2Config
+	HasherBCrypt() *HasherBCryptConfig
 }
 
 type GeneratorProvider interface {
@@ -31,15 +42,4 @@ type GeneratorProvider interface {
 
 type AuthenticatorProvider interface {
 	AuthenticatorToken() *AuthenticatorTokenConfig
-	AuthenticatorJWT() *AuthenticatorJWTConfig
-}
-
-type DefaultProvider interface {
-	Logger() log.Logger
-	Name() string
-	Version() string
-	RegisterTTL() time.Duration
-	RegisterInterval() time.Duration
-	Address() string
-	LogMode() string
 }

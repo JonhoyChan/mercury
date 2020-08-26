@@ -91,30 +91,8 @@ func (s *httpServer) middleware() {
 func (s *httpServer) setupRouter() {
 	v1 := ginx.NewGroup(s.e.Group("/chat/v1/"))
 	{
-		v1.GET("/decrypt", s.decryptPath)
-		// Websocket
 		v1.GET("/channels", s.serveWebSocket)
 	}
-}
-
-// TODO
-func (s *httpServer) decryptPath(c *ginx.Context) {
-	encryptPath := c.Query("hash")
-	if encryptPath == "" {
-		c.Error(ecode.ErrBadRequest)
-		return
-	}
-	timestamp := c.GetHeader(ginx.TimestampHeader)
-
-	boxer, _ := secretboxer.SecretBoxerForType(secretboxer.WrapTypePassphrase, timestamp, secretboxer.EncodingTypeURL)
-	realPath, err := boxer.Open(encryptPath)
-	if err != nil {
-		c.Error(ecode.ErrBadRequest)
-		return
-	}
-
-	c.Request.URL.Path = string(realPath)
-	s.e.HandleContext(c.Context)
 }
 
 func (s *httpServer) serveWebSocket(c *ginx.Context) {
@@ -124,5 +102,5 @@ func (s *httpServer) serveWebSocket(c *ginx.Context) {
 		return
 	}
 
-	s.srv.SessionStore.NewSession(c, conn, s.id, s.srv.SessionStore.Delete)
+	s.srv.SessionStore.NewSession(c, conn, s.id, s.srv)
 }

@@ -2,19 +2,88 @@ syntax = "proto3";
 
 package chat.service;
 option go_package = "api";
+option (gogoproto.goproto_getters_all) = false;
+option (gogoproto.goproto_enum_prefix_all) = false;
+option (gogoproto.marshaler_all) = true;
+option (gogoproto.sizer_all) = true;
+option (gogoproto.unmarshaler_all) = true;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
-service Chat {
-   // Connect a connection
-   rpc Connect(ConnectReq) returns (Empty) {};
-   // Disconnect a connection
-   rpc Disconnect(DisconnectReq) returns (Empty) {};
-   // Heartbeat a connection
-   rpc Heartbeat(HeartbeatReq) returns (Empty) {};
+message Empty {}
+
+message Record {
+    string uid = 1 [(gogoproto.customname) = "UID"];
+    int64 authenticated_at = 3;
 }
 
-message Empty {}
+enum HandlerType {
+    HandlerTypeDefault = 0;
+}
+
+message CreateClientReq {
+    string name = 1;
+    string token_secret = 2;
+    int64 token_expire = 3;
+}
+
+message CreateClientResp {
+    string client_id = 1 [(gogoproto.customname) = "ClientID"];
+    string client_secret = 2;
+}
+
+message UpdateClientReq {
+    string token = 1;
+    string client_name = 2;
+    string token_secret = 3;
+    int64 token_expire = 4;
+}
+
+message DeleteClientReq {
+    string token = 1;
+}
+
+message GenerateTokenReq {
+    string client_id = 1 [(gogoproto.customname) = "ClientID"];
+    string client_secret = 2;
+}
+
+message TokenResp {
+    string token = 1;
+    string lifetime = 2;
+}
+
+message CreateUserReq {
+    string token = 1;
+    string name = 2;
+}
+
+message CreateUserResp {
+    string uid = 1 [(gogoproto.customname) = "UID"];
+}
+
+message DeleteUserReq {
+    string token = 1;
+    string uid = 2 [(gogoproto.customname) = "UID"];
+}
+
+message AddFriendReq {
+    string token = 1;
+    string uid = 2;
+    string friend_uid = 3;
+}
+
+message DeleteFriendReq {
+    string token = 1;
+    string uid = 2;
+    string friend_uid = 3;
+}
+
+message ListenReq {
+    string token = 1;
+}
+
+message Message {}
 
 message ConnectReq {
     string uid = 1 [(gogoproto.customname) = "UID"];
@@ -31,4 +100,35 @@ message HeartbeatReq {
     string uid = 1 [(gogoproto.customname) = "UID"];
     string sid = 2 [(gogoproto.customname) = "SID"];
     string server_id = 3 [(gogoproto.customname) = "ServerID"];
+}
+
+service Chat {
+    // Create new client
+    rpc CreateClient(CreateClientReq) returns (CreateClientResp) {};
+    // Update client
+    rpc UpdateClient(UpdateClientReq) returns (Empty) {};
+    // Delete client
+    rpc DeleteClient(DeleteClientReq) returns (Empty) {};
+
+    // Generate a new token for client
+    rpc GenerateToken(GenerateTokenReq) returns (TokenResp) {};
+
+    // Create new user
+    // rpc CreateUser(CreateUserReq) returns (CreateUserResp) {};
+    // Delete user
+    // rpc DeleteUser(DeleteUserReq) returns (Empty) {};
+    // Add friend
+    // rpc AddFriend(AddFriendReq) returns (Empty) {};
+    // Delete friend
+   //  rpc DeleteFriend(DeleteFriendReq) returns (Empty) {};
+
+    // Listening all real-time messages under the client to which the current token belongs
+    // rpc Listen(ListenReq) returns (stream Message) {};
+
+    // Connect a connection
+    rpc Connect(ConnectReq) returns (Empty) {};
+    // Disconnect a connection
+    rpc Disconnect(DisconnectReq) returns (Empty) {};
+    // Heartbeat a connection
+    rpc Heartbeat(HeartbeatReq) returns (Empty) {};
 }

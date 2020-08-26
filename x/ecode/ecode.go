@@ -34,7 +34,7 @@ type Code struct {
 }
 
 func (c Code) Error() string {
-	return strconv.Itoa(c.code)
+	return c.Message()
 }
 
 // Code return error code
@@ -48,7 +48,7 @@ func (c Code) Message() string {
 	if m, ok := _codes[c.code]; ok {
 		return m
 	}
-	return c.Error()
+	return strconv.Itoa(c.code)
 }
 
 // ResetMessage reset error message

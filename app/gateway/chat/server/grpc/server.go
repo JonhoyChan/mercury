@@ -4,6 +4,7 @@ import (
 	"context"
 	"outgoing/app/gateway/chat/api"
 	"outgoing/app/gateway/chat/config"
+	"outgoing/app/gateway/chat/service"
 	"outgoing/x"
 	"outgoing/x/ecode"
 	"outgoing/x/log"
@@ -18,7 +19,10 @@ import (
 	"github.com/micro/go-plugins/registry/etcdv3/v2"
 )
 
-type grpcServer struct{}
+type grpcServer struct {
+	l   log.Logger
+	srv *service.Service
+}
 
 // 注册服务
 func Init(c config.Provider) {
@@ -31,7 +35,6 @@ func Init(c config.Provider) {
 		micro.Address(c.RPCAddress()),
 	}
 
-	// 判断是否使用了etcd作为服务注册
 	if c.Etcd().Enable {
 		etcdv3Registry := etcdv3.NewRegistry(func(op *registry.Options) {
 			var addresses []string
@@ -67,5 +70,9 @@ func Init(c config.Provider) {
 
 func (s *grpcServer) PublishMessage(ctx context.Context, req *api.Empty, resp *api.Empty) error {
 	log.Info("[PublishMessage] request is received")
+
+	session := s.srv.SessionStore.Get("req.SID")
+	if session != nil {
+	}
 	return nil
 }

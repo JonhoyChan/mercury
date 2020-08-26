@@ -43,6 +43,14 @@ func NewChatEndpoints() []*api.Endpoint {
 // Client API for Chat service
 
 type ChatService interface {
+	// Create new client
+	CreateClient(ctx context.Context, in *CreateClientReq, opts ...client.CallOption) (*CreateClientResp, error)
+	// Update client
+	UpdateClient(ctx context.Context, in *UpdateClientReq, opts ...client.CallOption) (*Empty, error)
+	// Delete client
+	DeleteClient(ctx context.Context, in *DeleteClientReq, opts ...client.CallOption) (*Empty, error)
+	// Generate a new token for client
+	GenerateToken(ctx context.Context, in *GenerateTokenReq, opts ...client.CallOption) (*TokenResp, error)
 	// Connect a connection
 	Connect(ctx context.Context, in *ConnectReq, opts ...client.CallOption) (*Empty, error)
 	// Disconnect a connection
@@ -61,6 +69,46 @@ func NewChatService(name string, c client.Client) ChatService {
 		c:    c,
 		name: name,
 	}
+}
+
+func (c *chatService) CreateClient(ctx context.Context, in *CreateClientReq, opts ...client.CallOption) (*CreateClientResp, error) {
+	req := c.c.NewRequest(c.name, "Chat.CreateClient", in)
+	out := new(CreateClientResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatService) UpdateClient(ctx context.Context, in *UpdateClientReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "Chat.UpdateClient", in)
+	out := new(Empty)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatService) DeleteClient(ctx context.Context, in *DeleteClientReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "Chat.DeleteClient", in)
+	out := new(Empty)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatService) GenerateToken(ctx context.Context, in *GenerateTokenReq, opts ...client.CallOption) (*TokenResp, error) {
+	req := c.c.NewRequest(c.name, "Chat.GenerateToken", in)
+	out := new(TokenResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *chatService) Connect(ctx context.Context, in *ConnectReq, opts ...client.CallOption) (*Empty, error) {
@@ -96,6 +144,14 @@ func (c *chatService) Heartbeat(ctx context.Context, in *HeartbeatReq, opts ...c
 // Server API for Chat service
 
 type ChatHandler interface {
+	// Create new client
+	CreateClient(context.Context, *CreateClientReq, *CreateClientResp) error
+	// Update client
+	UpdateClient(context.Context, *UpdateClientReq, *Empty) error
+	// Delete client
+	DeleteClient(context.Context, *DeleteClientReq, *Empty) error
+	// Generate a new token for client
+	GenerateToken(context.Context, *GenerateTokenReq, *TokenResp) error
 	// Connect a connection
 	Connect(context.Context, *ConnectReq, *Empty) error
 	// Disconnect a connection
@@ -106,6 +162,10 @@ type ChatHandler interface {
 
 func RegisterChatHandler(s server.Server, hdlr ChatHandler, opts ...server.HandlerOption) error {
 	type chat interface {
+		CreateClient(ctx context.Context, in *CreateClientReq, out *CreateClientResp) error
+		UpdateClient(ctx context.Context, in *UpdateClientReq, out *Empty) error
+		DeleteClient(ctx context.Context, in *DeleteClientReq, out *Empty) error
+		GenerateToken(ctx context.Context, in *GenerateTokenReq, out *TokenResp) error
 		Connect(ctx context.Context, in *ConnectReq, out *Empty) error
 		Disconnect(ctx context.Context, in *DisconnectReq, out *Empty) error
 		Heartbeat(ctx context.Context, in *HeartbeatReq, out *Empty) error
@@ -119,6 +179,22 @@ func RegisterChatHandler(s server.Server, hdlr ChatHandler, opts ...server.Handl
 
 type chatHandler struct {
 	ChatHandler
+}
+
+func (h *chatHandler) CreateClient(ctx context.Context, in *CreateClientReq, out *CreateClientResp) error {
+	return h.ChatHandler.CreateClient(ctx, in, out)
+}
+
+func (h *chatHandler) UpdateClient(ctx context.Context, in *UpdateClientReq, out *Empty) error {
+	return h.ChatHandler.UpdateClient(ctx, in, out)
+}
+
+func (h *chatHandler) DeleteClient(ctx context.Context, in *DeleteClientReq, out *Empty) error {
+	return h.ChatHandler.DeleteClient(ctx, in, out)
+}
+
+func (h *chatHandler) GenerateToken(ctx context.Context, in *GenerateTokenReq, out *TokenResp) error {
+	return h.ChatHandler.GenerateToken(ctx, in, out)
 }
 
 func (h *chatHandler) Connect(ctx context.Context, in *ConnectReq, out *Empty) error {
