@@ -8,29 +8,6 @@ import (
 	"outgoing/x"
 )
 
-func (s *Service) GenerateToken(ctx context.Context, req *api.GenerateTokenReq) (string, string, error) {
-	s.log.Info("[GenerateToken] request is received")
-
-	credential, err := s.persister.Client().GetClientCredential(ctx, req.ClientID)
-	if err != nil {
-		s.log.Error("[GenerateToken] failed to get client credential", "client_id", req.ClientID, "error", err)
-		return "", "", err
-	}
-
-	if err = s.hash.Compare([]byte(credential), []byte(req.ClientSecret)); err != nil {
-		s.log.Error("[GenerateToken] failed to compare", "error", err)
-		return "", "", err
-	}
-
-	token, lifetime, err := s.multiHandler[api.HandlerTypeDefault].GenerateToken(req.ClientID)
-	if err != nil {
-		s.log.Error("[GenerateToken] failed to generate token", "client_id", req.ClientID, "error", err)
-		return "", "", err
-	}
-
-	return token, lifetime, nil
-}
-
 func (s *Service) CreateClient(ctx context.Context, req *api.CreateClientReq) (string, string, error) {
 	s.log.Info("[CreateClient] request is received")
 
@@ -63,12 +40,18 @@ func (s *Service) CreateClient(ctx context.Context, req *api.CreateClientReq) (s
 func (s *Service) UpdateClient(ctx context.Context, req *api.UpdateClientReq) error {
 	s.log.Info("[UpdateClient] request is received")
 
-	id := s.MustGetClientID(ctx)
+	id := s.MustGetContextClient(ctx)
 	in := &persistence.ClientUpdate{
-		ID:          id,
-		Name:        &req.ClientName,
-		TokenSecret: &req.TokenSecret,
-		TokenExpire: &req.TokenExpire,
+		ID: id,
+	}
+	if req.ClientName != nil {
+		in.Name = &req.ClientName.Value
+	}
+	if req.TokenSecret != nil {
+		in.TokenSecret = &req.TokenSecret.Value
+	}
+	if req.TokenExpire != nil {
+		in.TokenExpire = &req.TokenExpire.Value
 	}
 	if err := s.persister.Client().Update(ctx, in); err != nil {
 		s.log.Error("[CreateClient] failed to update client", "client_id", id, "error", err)
@@ -81,11 +64,34 @@ func (s *Service) UpdateClient(ctx context.Context, req *api.UpdateClientReq) er
 func (s *Service) DeleteClient(ctx context.Context) error {
 	s.log.Info("[DeleteClient] request is received")
 
-	id := s.MustGetClientID(ctx)
+	id := s.MustGetContextClient(ctx)
 	if err := s.persister.Client().Delete(ctx, id); err != nil {
 		s.log.Error("[DeleteClient] failed to delete client", "client_id", id, "error", err)
 		return err
 	}
 
 	return nil
+}
+
+func (s *Service) GenerateToken(ctx context.Context, req *api.GenerateTokenReq) (string, string, error) {
+	s.log.Info("[GenerateToken] request is received")
+
+	credential, err := s.persister.Client().GetClientCredential(ctx, req.ClientID)
+	if err != nil {
+		s.log.Error("[GenerateToken] failed to get client credential", "client_id", req.ClientID, "error", err)
+		return "", "", err
+	}
+
+	if err = s.hash.Compare([]byte(credential), []byte(req.ClientSecret)); err != nil {
+		s.log.Error("[GenerateToken] failed to compare", "error", err)
+		return "", "", err
+	}
+
+	token, lifetime, err := s.token.GenerateToken(req.ClientID)
+	if err != nil {
+		s.log.Error("[GenerateToken] failed to generate token", "client_id", req.ClientID, "error", err)
+		return "", "", err
+	}
+
+	return token, lifetime, nil
 }

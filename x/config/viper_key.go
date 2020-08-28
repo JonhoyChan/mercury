@@ -52,8 +52,7 @@ const (
 	ViperKeyGeneratorUidKey    = "generator.uid.key"
 
 	// authenticator token
-	ViperKeyAuthenticatorTokenEnable       = "authenticator.token.enable"
-	ViperKeyAuthenticatorTokenExpire       = "authenticator.token.expire"
-	ViperKeyAuthenticatorTokenSerialNumber = "authenticator.token.serial_number"
-	ViperKeyAuthenticatorTokenKey          = "authenticator.token.key"
+	ViperKeyAuthenticatorTokenEnable = "authenticator.token.enable"
+	ViperKeyAuthenticatorTokenExpire = "authenticator.token.expire"
+	ViperKeyAuthenticatorTokenKey    = "authenticator.token.key"
 )

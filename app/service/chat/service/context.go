@@ -4,14 +4,28 @@ import "context"
 
 const (
 	clientContextKey = "client"
+	userContextKey   = "user"
 )
 
-func (s *Service) SetClientID(ctx context.Context, clientID string) context.Context {
+func (s *Service) SetContextClient(ctx context.Context, clientID string) context.Context {
 	return context.WithValue(ctx, clientContextKey, clientID)
 }
 
-func (s *Service) GetClientID(ctx context.Context) (string, bool) {
-	value := ctx.Value(clientContextKey)
+type ContextUser struct {
+	ID  int64
+	UID string
+}
+
+func (s *Service) SetContextUser(ctx context.Context, UID string) context.Context {
+	u := &ContextUser{
+		ID:  s.DecodeUid(UID),
+		UID: UID,
+	}
+	return context.WithValue(ctx, userContextKey, u)
+}
+
+func (s *Service) GetContext(ctx context.Context, key string) (string, bool) {
+	value := ctx.Value(key)
 	if value == nil {
 		return "", false
 	}
@@ -23,9 +37,29 @@ func (s *Service) GetClientID(ctx context.Context) (string, bool) {
 	return id, true
 }
 
-func (s *Service) MustGetClientID(ctx context.Context) string {
-	if value, exists := s.GetClientID(ctx); exists {
+func (s *Service) GetContextUser(ctx context.Context, key string) (*ContextUser, bool) {
+	value := ctx.Value(key)
+	if value == nil {
+		return nil, false
+	}
+	u, ok := value.(*ContextUser)
+	if !ok {
+		return nil, false
+	}
+
+	return u, true
+}
+
+func (s *Service) MustGetContextClient(ctx context.Context) string {
+	if value, exists := s.GetContext(ctx, clientContextKey); exists {
 		return value
 	}
 	panic("Key \"" + clientContextKey + "\" does not exist")
+}
+
+func (s *Service) MustGetContextUser(ctx context.Context) *ContextUser {
+	if value, exists := s.GetContextUser(ctx, userContextKey); exists {
+		return value
+	}
+	panic("Key \"" + userContextKey + "\" does not exist")
 }

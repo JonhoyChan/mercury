@@ -13,11 +13,16 @@ import (
 	"time"
 )
 
+type Authenticator interface {
+	GenerateToken(data interface{}) (token string, lifetime string, err error)
+
+	Authenticate(token string, out interface{}) (lifetime string, err error)
+}
+
 // authenticator is a singleton instance of the authenticator.
 type authenticator struct {
-	hmacSalt     []byte
-	lifetime     time.Duration
-	serialNumber int
+	hmacSalt []byte
+	lifetime time.Duration
 }
 
 type AuthenticatorTokenProvider interface {
@@ -35,9 +40,8 @@ func NewAuthenticator(p AuthenticatorTokenProvider) (*authenticator, error) {
 	}
 
 	return &authenticator{
-		hmacSalt:     tokenConfig.Key,
-		lifetime:     time.Duration(tokenConfig.Expire) * time.Second,
-		serialNumber: tokenConfig.SerialNumber,
+		hmacSalt: tokenConfig.Key,
+		lifetime: time.Duration(tokenConfig.Expire) * time.Second,
 	}, nil
 }
 
@@ -97,6 +101,10 @@ func (a *authenticator) Authenticate(token string, out interface{}) (string, err
 	tokenByte, err := hex.DecodeString(token)
 	if err != nil {
 		return "", err
+	}
+
+	if len(tokenByte) <= sha256.Size {
+		return "", ecode.ErrInvalidToken
 	}
 
 	dataSize := len(tokenByte) - sha256.Size

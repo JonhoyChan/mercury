@@ -57,3 +57,8 @@ hasher:
     key_length: 16
   bcrypt:
     cost: 10
+
+generator:
+  uid:
+    work_id: 1
+    key: la6YsO+bNX/+XIkO

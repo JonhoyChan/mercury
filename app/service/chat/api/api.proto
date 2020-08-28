@@ -1,7 +1,7 @@
 syntax = "proto3";
 
-package chat.service;
-option go_package = "api";
+package chat.logic.service;
+option go_package = ".;api";
 option (gogoproto.goproto_getters_all) = false;
 option (gogoproto.goproto_enum_prefix_all) = false;
 option (gogoproto.marshaler_all) = true;
@@ -10,16 +10,31 @@ option (gogoproto.unmarshaler_all) = true;
 
 import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
-message Empty {}
-
-message Record {
-    string uid = 1 [(gogoproto.customname) = "UID"];
-    int64 authenticated_at = 3;
-}
+/* ---------------------------------------- Type ---------------------------------------- */
 
 enum HandlerType {
     HandlerTypeDefault = 0;
 }
+
+message Empty {}
+
+message StringValue {
+    string value = 1;
+}
+
+message Int64Value {
+    int64 value = 1;
+}
+
+message BoolValue {
+    bool value = 1;
+}
+
+message BytesValue {
+    bytes value = 1;
+}
+
+/* ---------------------------------------- Service Request ---------------------------------------- */
 
 message CreateClientReq {
     string name = 1;
@@ -27,16 +42,11 @@ message CreateClientReq {
     int64 token_expire = 3;
 }
 
-message CreateClientResp {
-    string client_id = 1 [(gogoproto.customname) = "ClientID"];
-    string client_secret = 2;
-}
-
 message UpdateClientReq {
     string token = 1;
-    string client_name = 2;
-    string token_secret = 3;
-    int64 token_expire = 4;
+    StringValue client_name = 2;
+    StringValue token_secret = 3;
+    Int64Value token_expire = 4;
 }
 
 message DeleteClientReq {
@@ -48,21 +58,23 @@ message GenerateTokenReq {
     string client_secret = 2;
 }
 
-message TokenResp {
-    string token = 1;
-    string lifetime = 2;
-}
-
 message CreateUserReq {
     string token = 1;
     string name = 2;
 }
 
-message CreateUserResp {
-    string uid = 1 [(gogoproto.customname) = "UID"];
+message UpdateActivatedReq {
+    string token = 1;
+    string uid = 2 [(gogoproto.customname) = "UID"];
+    bool activated = 3;
 }
 
 message DeleteUserReq {
+    string token = 1;
+    string uid = 2 [(gogoproto.customname) = "UID"];
+}
+
+message GenerateUserTokenReq {
     string token = 1;
     string uid = 2 [(gogoproto.customname) = "UID"];
 }
@@ -83,8 +95,6 @@ message ListenReq {
     string token = 1;
 }
 
-message Message {}
-
 message ConnectReq {
     string uid = 1 [(gogoproto.customname) = "UID"];
     string sid = 2 [(gogoproto.customname) = "SID"];
@@ -102,7 +112,25 @@ message HeartbeatReq {
     string server_id = 3 [(gogoproto.customname) = "ServerID"];
 }
 
-service Chat {
+/* ---------------------------------------- Service Response ---------------------------------------- */
+
+message CreateClientResp {
+    string client_id = 1 [(gogoproto.customname) = "ClientID"];
+    string client_secret = 2;
+}
+
+message TokenResp {
+    string token = 1;
+    string lifetime = 2;
+}
+
+message CreateUserResp {
+    string uid = 1 [(gogoproto.customname) = "UID"];
+}
+
+/* ---------------------------------------- Service ---------------------------------------- */
+
+service ChatAdmin {
     // Create new client
     rpc CreateClient(CreateClientReq) returns (CreateClientResp) {};
     // Update client
@@ -114,17 +142,25 @@ service Chat {
     rpc GenerateToken(GenerateTokenReq) returns (TokenResp) {};
 
     // Create new user
-    // rpc CreateUser(CreateUserReq) returns (CreateUserResp) {};
+    rpc CreateUser(CreateUserReq) returns (CreateUserResp) {};
+    // Update user activated
+    rpc UpdateActivated(UpdateActivatedReq) returns (Empty) {};
     // Delete user
-    // rpc DeleteUser(DeleteUserReq) returns (Empty) {};
+    rpc DeleteUser(DeleteUserReq) returns (Empty) {};
+
+    // Generate a new token for user
+    rpc GenerateUserToken(GenerateUserTokenReq) returns(TokenResp) {};
+
     // Add friend
     // rpc AddFriend(AddFriendReq) returns (Empty) {};
     // Delete friend
-   //  rpc DeleteFriend(DeleteFriendReq) returns (Empty) {};
+    //  rpc DeleteFriend(DeleteFriendReq) returns (Empty) {};
 
     // Listening all real-time messages under the client to which the current token belongs
     // rpc Listen(ListenReq) returns (stream Message) {};
+}
 
+service Chat {
     // Connect a connection
     rpc Connect(ConnectReq) returns (Empty) {};
     // Disconnect a connection

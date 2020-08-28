@@ -54,6 +54,9 @@ func Init(c config.Provider, srv *service.Service) {
 		s: srv,
 	}
 
+	if err := api.RegisterChatAdminHandler(microServer.Server(), s); err != nil {
+		panic("unable to register grpc service:" + err.Error())
+	}
 	if err := api.RegisterChatHandler(microServer.Server(), s); err != nil {
 		panic("unable to register grpc service:" + err.Error())
 	}
@@ -100,6 +103,44 @@ func (s *grpcServer) DeleteClient(ctx context.Context, req *api.DeleteClientReq,
 		return err
 	}
 
+	return nil
+}
+
+func (s *grpcServer) CreateUser(ctx context.Context, req *api.CreateUserReq, resp *api.CreateUserResp) error {
+	uid, err := s.s.CreateUser(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	resp.UID = uid
+	return nil
+}
+
+func (s *grpcServer) UpdateActivated(ctx context.Context, req *api.UpdateActivatedReq, resp *api.Empty) error {
+	err := s.s.UpdateActivated(s.s.SetContextUser(ctx, req.UID), req.Activated)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *grpcServer) DeleteUser(ctx context.Context, req *api.DeleteUserReq, resp *api.Empty) error {
+	if err := s.s.DeleteUser(s.s.SetContextUser(ctx, req.UID)); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *grpcServer) GenerateUserToken(ctx context.Context, req *api.GenerateUserTokenReq, resp *api.TokenResp) error {
+	token, lifetime, err := s.s.GenerateUserToken(s.s.SetContextUser(ctx, req.UID))
+	if err != nil {
+		return err
+	}
+
+	resp.Token = token
+	resp.Lifetime = lifetime
 	return nil
 }
 

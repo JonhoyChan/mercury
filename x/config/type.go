@@ -43,13 +43,12 @@ type HasherBCryptConfig struct {
 	Cost int
 }
 
-type GeneratorUidConfig struct {
+type GeneratorUIDConfig struct {
 	WorkID int64
 	Key    []byte
 }
 
 type AuthenticatorTokenConfig struct {
-	Expire       int
-	SerialNumber int
-	Key          []byte
+	Expire int
+	Key    []byte
 }

@@ -25,7 +25,7 @@ type Persister interface {
 type ClientPersister interface {
 	GetClientCredential(ctx context.Context, id string) (string, error)
 
-	GetClientTokenConfig(ctx context.Context, id string) (*ClientTokenConfig, error)
+	GetClient(ctx context.Context, id string) (*Client, error)
 
 	Create(ctx context.Context, in *ClientCreate) error
 
@@ -36,6 +36,8 @@ type ClientPersister interface {
 
 type UserPersister interface {
 	Create(ctx context.Context, in *UserCreate) error
+
+	UpdateActivated(ctx context.Context, id int64, activated bool) error
 
 	Delete(ctx context.Context, id int64) error
 

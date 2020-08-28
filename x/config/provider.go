@@ -36,10 +36,10 @@ type HasherProvider interface {
 	HasherBCrypt() *HasherBCryptConfig
 }
 
-type GeneratorProvider interface {
-	GeneratorUid() *GeneratorUidConfig
-}
-
 type AuthenticatorProvider interface {
 	AuthenticatorToken() *AuthenticatorTokenConfig
+}
+
+type GeneratorProvider interface {
+	GeneratorUID() *GeneratorUIDConfig
 }

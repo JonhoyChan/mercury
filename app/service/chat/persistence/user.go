@@ -4,6 +4,7 @@ type UserCreate struct {
 	ClientID string
 	UserID   int64
 	Name     string
+	UID      string
 }
 
 type UserFriend struct {

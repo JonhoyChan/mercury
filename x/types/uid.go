@@ -15,19 +15,19 @@ type UidGenerator struct {
 	cipher *xtea.Cipher
 }
 
-type GeneratorUidProvider interface {
-	GeneratorUid() *config.GeneratorUidConfig
+type GeneratorUIDProvider interface {
+	GeneratorUID() *config.GeneratorUIDConfig
 }
 
 // Init initialises the Uid generator
-func (ug *UidGenerator) Init(c GeneratorUidProvider) error {
+func (ug *UidGenerator) Init(c GeneratorUIDProvider) error {
 	var err error
 
 	if ug.seq == nil {
-		ug.seq, err = snowflake.NewNode(c.GeneratorUid().WorkID)
+		ug.seq, err = snowflake.NewNode(c.GeneratorUID().WorkID)
 	}
 	if ug.cipher == nil {
-		ug.cipher, err = xtea.NewCipher(c.GeneratorUid().Key)
+		ug.cipher, err = xtea.NewCipher(c.GeneratorUID().Key)
 	}
 
 	return err

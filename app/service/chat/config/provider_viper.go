@@ -84,9 +84,8 @@ func (p *ViperProvider) Redis() *config.RedisConfig {
 
 func (p *ViperProvider) AuthenticatorToken() *config.AuthenticatorTokenConfig {
 	return &config.AuthenticatorTokenConfig{
-		Expire:       v.GetInt(config.ViperKeyAuthenticatorTokenExpire),
-		SerialNumber: v.GetInt(config.ViperKeyAuthenticatorTokenSerialNumber),
-		Key:          []byte(v.GetString(config.ViperKeyAuthenticatorTokenKey)),
+		Expire: v.GetInt(config.ViperKeyAuthenticatorTokenExpire),
+		Key:    []byte(v.GetString(config.ViperKeyAuthenticatorTokenKey)),
 	}
 }
 
@@ -103,5 +102,12 @@ func (p *ViperProvider) HasherArgon2() *config.HasherArgon2Config {
 func (p *ViperProvider) HasherBCrypt() *config.HasherBCryptConfig {
 	return &config.HasherBCryptConfig{
 		Cost: v.GetInt(config.ViperKeyHasherBCryptCost),
+	}
+}
+
+func (p *ViperProvider) GeneratorUID() *config.GeneratorUIDConfig {
+	return &config.GeneratorUIDConfig{
+		WorkID: v.GetInt64(config.ViperKeyGeneratorUidWorkID),
+		Key:    []byte(v.GetString(config.ViperKeyGeneratorUidKey)),
 	}
 }

@@ -1,8 +1,10 @@
 package persistence
 
-type ClientTokenConfig struct {
+type Client struct {
+	ID          string
+	Name        string
 	TokenSecret string
-	TokenExpire int32
+	TokenExpire int64
 }
 
 type ClientCreate struct {

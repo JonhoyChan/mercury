@@ -47,18 +47,20 @@ func (p *clientPersister) GetClientCredential(_ context.Context, id string) (str
 	return credential, nil
 }
 
-func (p *clientPersister) GetClientTokenConfig(_ context.Context, id string) (*persistence.ClientTokenConfig, error) {
+func (p *clientPersister) GetClient(_ context.Context, id string) (*persistence.Client, error) {
 	var (
-		tokenExpire int32
-		tokenSecret string
+		name, tokenSecret string
+		tokenExpire       int64
 	)
-	if err := p.db.QueryRow("SELECT token_expire, token_secret FROM client WHERE id = $1;", id).Scan(&tokenExpire, &tokenSecret); sqlx.IsErrNoRows(err) {
+	if err := p.db.QueryRow("SELECT name, token_expire, token_secret FROM client WHERE id = $1;", id).Scan(&name, &tokenExpire, &tokenSecret); sqlx.IsErrNoRows(err) {
 		return nil, ecode.ErrDataDoesNotExist
 	} else if err != nil {
 		return nil, err
 	}
 
-	return &persistence.ClientTokenConfig{
+	return &persistence.Client{
+		ID:          id,
+		Name:        name,
 		TokenSecret: tokenSecret,
 		TokenExpire: tokenExpire,
 	}, nil
@@ -85,7 +87,7 @@ func (p *clientPersister) Create(_ context.Context, in *persistence.ClientCreate
 
 func (p *clientPersister) Update(_ context.Context, in *persistence.ClientUpdate) error {
 	updateSQL := `UPDATE client SET updated_at = $1, %s WHERE id = $%d;`
-	updateValuesTemplate := "%s = $%d, "
+	updateValuesTemplate := "%s = $%d"
 	var updateValues []string
 
 	var start = 1

@@ -5,8 +5,8 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/micro/go-micro/v2/server"
 	"github.com/pkg/errors"
-	"outgoing/app/service/chat/api"
-	"outgoing/app/service/chat/auth"
+	"outgoing/app/service/chat/auth/jwt"
+	"outgoing/app/service/chat/auth/token"
 	"outgoing/app/service/chat/config"
 	"outgoing/app/service/chat/entity"
 	"outgoing/app/service/chat/persistence"
@@ -18,17 +18,20 @@ import (
 	"outgoing/x/ecode"
 	"outgoing/x/hash"
 	"outgoing/x/log"
+	"outgoing/x/types"
 	"reflect"
 	"time"
 )
 
 type Service struct {
-	config       config.Provider
-	log          log.Logger
-	multiHandler auth.MultiHandler
-	hash         hash.Hasher
-	cache        persistence.Cacher
-	persister    persistence.Persister
+	config    config.Provider
+	log       log.Logger
+	token     token.Authenticator
+	jwt       jwt.Authenticator
+	hash      hash.Hasher
+	cache     persistence.Cacher
+	persister persistence.Persister
+	uidGen    types.UidGenerator
 }
 
 func NewService(c config.Provider) (*Service, error) {
@@ -38,7 +41,11 @@ func NewService(c config.Provider) (*Service, error) {
 		hash:   hash.NewHasherBCrypt(c),
 	}
 
-	err := s.withAuthMultiHandler()
+	err := s.withTokenAuthenticator()
+	if err != nil {
+		return nil, err
+	}
+	err = s.withJWTAuthenticator()
 	if err != nil {
 		return nil, err
 	}
@@ -50,14 +57,28 @@ func NewService(c config.Provider) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = s.withUidGenerator()
+	if err != nil {
+		return nil, err
+	}
 
 	return s, nil
 }
 
-func (s *Service) withAuthMultiHandler() error {
+func (s *Service) withTokenAuthenticator() error {
 	var err error
-	if s.multiHandler, err = auth.NewMultiHandler(s.config); err != nil {
-		s.log.Error("unable to initialize the multi handler for authentication.", "error", err)
+	if s.token, err = token.NewAuthenticator(s.config); err != nil {
+		s.log.Error("unable to initialize the authenticator of token.", "error", err)
+		return err
+	}
+
+	return nil
+}
+
+func (s *Service) withJWTAuthenticator() error {
+	var err error
+	if s.jwt, err = jwt.NewAuthenticator(); err != nil {
+		s.log.Error("unable to initialize the authenticator of jwt.", "error", err)
 		return err
 	}
 
@@ -114,6 +135,15 @@ func (s *Service) withPersister() error {
 	)
 }
 
+func (s *Service) withUidGenerator() error {
+	if err := s.uidGen.Init(s.config); err != nil {
+		s.log.Error("Unable to initialize the generator for Uid", "error", err)
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) AuthenticateClientToken(fn server.HandlerFunc) server.HandlerFunc {
 	return ecode.MicroHandlerFunc(func(ctx context.Context, req server.Request, rsp interface{}) error {
 		v := reflect.ValueOf(req.Body())
@@ -121,16 +151,20 @@ func (s *Service) AuthenticateClientToken(fn server.HandlerFunc) server.HandlerF
 			v = v.Elem()
 			if f := v.FieldByName("Token"); f.Kind() == reflect.String {
 				var clientID string
-				_, err := s.multiHandler[api.HandlerTypeDefault].Authenticate(f.String(), &clientID)
+				_, err := s.token.Authenticate(f.String(), &clientID)
 				if err != nil {
 					return err
 				}
-				ctx = s.SetClientID(ctx, clientID)
+				ctx = s.SetContextClient(ctx, clientID)
 			}
 		}
 
 		return fn(ctx, req, rsp)
 	})
+}
+
+func (s *Service) DecodeUid(uid string) int64 {
+	return s.uidGen.DecodeUid(types.ParseUidWithPrefix(uid, "uid"))
 }
 
 // Connect a connection

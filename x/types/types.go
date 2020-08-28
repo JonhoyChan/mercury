@@ -144,9 +144,9 @@ func (uid Uid) UID() string {
 }
 
 // ParseUserUID parses account VID of the form "uidXXXXXX"
-func ParseUserUID(s string) Uid {
+func ParseUidWithPrefix(s, prefix string) Uid {
 	var uid Uid
-	if strings.HasPrefix(s, "uid") {
+	if strings.HasPrefix(s, prefix) {
 		_ = (&uid).UnmarshalText([]byte(s)[3:])
 	}
 	return uid

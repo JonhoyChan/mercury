@@ -94,7 +94,7 @@ func (p *userPersister) Create(_ context.Context, in *persistence.UserCreate) er
 	}
 
 	now := time.Now().Unix()
-	if err = tx.Exec(insertUserSQL, 1, in.UserID, now, in.ClientID, in.Name, in.UserID); err != nil {
+	if err = tx.Exec(insertUserSQL, 1, in.UserID, now, in.ClientID, in.Name, in.UID); err != nil {
 		return err
 	}
 
@@ -107,6 +107,10 @@ func (p *userPersister) Create(_ context.Context, in *persistence.UserCreate) er
 	}
 
 	return nil
+}
+
+func (p *userPersister) UpdateActivated(_ context.Context, id int64, activated bool) error {
+	return p.db.Exec("UPDATE public.user SET activated = $1 WHERE id = $2;", 1, activated, id)
 }
 
 func (p *userPersister) Delete(_ context.Context, id int64) error {
