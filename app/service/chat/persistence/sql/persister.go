@@ -6,9 +6,10 @@ import (
 )
 
 type Persister struct {
-	db     *sqlx.DB
-	client *clientPersister
-	user   *userPersister
+	db      *sqlx.DB
+	client  *clientPersister
+	user    *userPersister
+	message *messagePersister
 }
 
 func NewPersister(db *sqlx.DB) *Persister {
@@ -18,6 +19,9 @@ func NewPersister(db *sqlx.DB) *Persister {
 			db: db,
 		},
 		user: &userPersister{
+			db: db,
+		},
+		message: &messagePersister{
 			db: db,
 		},
 	}
@@ -37,4 +41,8 @@ func (p *Persister) Client() persistence.ClientPersister {
 
 func (p *Persister) User() persistence.UserPersister {
 	return p.user
+}
+
+func (p *Persister) Message() persistence.MessagePersister {
+	return p.message
 }

@@ -1,18 +1,40 @@
 package persistence
 
-import "context"
+import (
+	"context"
+	"time"
+)
 
 type Cacher interface {
-	// Check cache
 	Ping() error
-	// Close cache
+
 	Close() error
-	// Add mapping
+
 	AddMapping(uid, sid, serverID string) error
-	// Set the expiration time of the mapping
+
 	ExpireMapping(uid, sid string) (bool, error)
-	// Delete the mapping
+
 	DeleteMapping(uid, sid string) error
+
+	GetSessions(uids ...string) (map[string]string, []string, error)
+
+	GetServerIDs(sids ...string) ([]string, error)
+
+	GetClient(clientID string) (*Client, error)
+
+	SetClient(clientID string, client *Client) error
+
+	DeleteClient(clientID string) error
+
+	GetClientID(token string) string
+
+	SetClientID(token, clientID string, lifetime time.Duration) error
+
+	GetTopicSequence(topic string) (int64, error)
+
+	SetTopicSequence(topic string, sequence int64, lifetime time.Duration) error
+
+	IncrTopicSequence(topic string) (int64, error)
 }
 
 type Persister interface {
@@ -20,6 +42,7 @@ type Persister interface {
 	Close() error
 	Client() ClientPersister
 	User() UserPersister
+	Message() MessagePersister
 }
 
 type ClientPersister interface {
@@ -35,6 +58,8 @@ type ClientPersister interface {
 }
 
 type UserPersister interface {
+	CheckActivated(_ context.Context, clientID, uid string) (bool, error)
+
 	Create(ctx context.Context, in *UserCreate) error
 
 	UpdateActivated(ctx context.Context, id int64, activated bool) error
@@ -44,4 +69,10 @@ type UserPersister interface {
 	AddFriend(ctx context.Context, in *UserFriend) error
 
 	DeleteFriend(ctx context.Context, in *UserFriend) error
+}
+
+type MessagePersister interface {
+	Add(_ context.Context, message *Message) error
+
+	GetTopicLastSequence(_ context.Context, topic string) (int64, error)
 }

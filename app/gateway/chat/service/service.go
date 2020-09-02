@@ -29,35 +29,39 @@ func NewService(log log.Logger) *Service {
 	return &Service{
 		SessionStore: NewSessionStore(),
 		log:          log,
-		chatService:  chatApi.NewChatService("service.chat.logic", c),
+		chatService:  chatApi.NewChatService("mercury.logic", c),
 	}
 }
 
-func (s *Service) authenticate(ctx context.Context, token, sid, serverID string) (types.Uid, types.AuthLevel, error) {
-	resp, err := s.chatService.Authenticate(ctx, &chatApi.AuthenticateReq{
-		Token: token,
-	})
-	if err != nil {
-		return 0, 0, err
-	}
-
-	_, err = s.chatService.Connect(ctx, &chatApi.ConnectReq{
-		UID:      resp.Record.UID,
+func (s *Service) connect(ctx context.Context, token, sid, serverID string) (string, types.Uid, error) {
+	resp, err := s.chatService.Connect(ctx, &chatApi.ConnectReq{
+		JWTToken: token,
 		SID:      sid,
 		ServerID: serverID,
 	})
 	if err != nil {
-		return 0, 0, err
+		return "", 0, err
 	}
 
-	return types.ParseUserUID(resp.Record.UID), types.AuthLevel(resp.Record.Level), nil
+	return resp.ClientID, types.ParseUID(resp.UID), nil
 }
 
-func (s *Service) heartbeat(ctx context.Context, uid, sid, serverID string) (err error) {
-	_, err = s.chatService.Heartbeat(ctx, &chatApi.HeartbeatReq{
+func (s *Service) heartbeat(ctx context.Context, uid, sid, serverID string) error {
+	_, err := s.chatService.Heartbeat(ctx, &chatApi.HeartbeatReq{
 		UID:      uid,
 		SID:      sid,
 		ServerID: serverID,
 	})
-	return
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) pushMessage(ctx context.Context, req *chatApi.PushMessageReq) (int64, int64, error) {
+	resp, err := s.chatService.PushMessage(ctx, req)
+	if err != nil {
+		return 0, 0, err
+	}
+	return resp.MessageId, resp.Sequence, nil
 }

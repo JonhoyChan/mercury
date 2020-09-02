@@ -2,6 +2,7 @@ package jwt
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 )
@@ -10,9 +11,9 @@ func TestJWT(t *testing.T) {
 	authenticator, _ := NewAuthenticator()
 
 	var (
-		issuer       = "mercury"
-		key          = []byte("AG5s4d68asg7SF5sdf454ghj")
-		expire int64 = 60
+		issuer = "mercury"
+		key    = []byte("AG5s4d68asg7SF5sdf454ghj")
+		expire = 60 * time.Second
 	)
 
 	var token string

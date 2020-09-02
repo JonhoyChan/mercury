@@ -12,8 +12,25 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 /* ---------------------------------------- Type ---------------------------------------- */
 
-enum HandlerType {
-    HandlerTypeDefault = 0;
+enum MessageType {
+    MessageTypeSingle = 0;
+    MessageTypeGroup = 1;
+}
+
+enum ContentType {
+    ContentTypeUnknown = 0;
+    ContentTypeText = 10;
+    ContentTypeImage = 20;
+    ContentTypeLocation = 30;
+    ContentTypeAudio = 40;
+    ContentTypeVideo = 50;
+    ContentTypeFile = 60;
+}
+
+enum PushMessageType {
+    PushMessageTypeDefault = 0;
+//    PushMessageTypeNotice = 1;
+//    PushMessageTypeBroadcast = 2;
 }
 
 message Empty {}
@@ -96,7 +113,7 @@ message ListenReq {
 }
 
 message ConnectReq {
-    string uid = 1 [(gogoproto.customname) = "UID"];
+    string jwt_token = 1 [(gogoproto.customname) = "JWTToken"];
     string sid = 2 [(gogoproto.customname) = "SID"];
     string server_id = 3 [(gogoproto.customname) = "ServerID"];
 }
@@ -110,6 +127,24 @@ message HeartbeatReq {
     string uid = 1 [(gogoproto.customname) = "UID"];
     string sid = 2 [(gogoproto.customname) = "SID"];
     string server_id = 3 [(gogoproto.customname) = "ServerID"];
+}
+
+message PushMessageReq {
+    string client_id = 1 [(gogoproto.customname) = "ClientID"];
+    string sid = 2 [(gogoproto.customname) = "SID"];
+    MessageType message_type = 3;
+    string sender = 4;
+    string receiver = 5;
+    ContentType content_type = 6;
+    bytes body = 7;
+    repeated string mentions = 8;
+}
+
+message PushMessage {
+    PushMessageType type = 1;
+    string server_id = 2 [(gogoproto.customname) = "ServerID"];
+    repeated string sids = 3 [(gogoproto.customname) = "SIDs"];
+    bytes data = 4;
 }
 
 /* ---------------------------------------- Service Response ---------------------------------------- */
@@ -126,6 +161,16 @@ message TokenResp {
 
 message CreateUserResp {
     string uid = 1 [(gogoproto.customname) = "UID"];
+}
+
+message ConnectResp {
+    string client_id = 1 [(gogoproto.customname) = "ClientID"];
+    string uid = 2 [(gogoproto.customname) = "UID"];
+}
+
+message PushMessageResp {
+    int64 message_id = 1;
+    int64 sequence = 2;
 }
 
 /* ---------------------------------------- Service ---------------------------------------- */
@@ -162,9 +207,11 @@ service ChatAdmin {
 
 service Chat {
     // Connect a connection
-    rpc Connect(ConnectReq) returns (Empty) {};
+    rpc Connect(ConnectReq) returns (ConnectResp) {};
     // Disconnect a connection
     rpc Disconnect(DisconnectReq) returns (Empty) {};
     // Heartbeat a connection
     rpc Heartbeat(HeartbeatReq) returns (Empty) {};
+    // Push message
+    rpc PushMessage(PushMessageReq) returns(PushMessageResp) {};
 }

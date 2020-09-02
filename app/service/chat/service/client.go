@@ -8,6 +8,20 @@ import (
 	"outgoing/x"
 )
 
+func (s *Service) getClient(ctx context.Context, clientID string) (client *persistence.Client, err error) {
+	client, err = s.cache.GetClient(clientID)
+	if err != nil {
+		client, err = s.persister.Client().GetClient(ctx, clientID)
+		if err != nil {
+			return
+		}
+
+		go s.cache.SetClient(clientID, client)
+	}
+
+	return
+}
+
 func (s *Service) CreateClient(ctx context.Context, req *api.CreateClientReq) (string, string, error) {
 	s.log.Info("[CreateClient] request is received")
 
@@ -54,9 +68,22 @@ func (s *Service) UpdateClient(ctx context.Context, req *api.UpdateClientReq) er
 		in.TokenExpire = &req.TokenExpire.Value
 	}
 	if err := s.persister.Client().Update(ctx, in); err != nil {
-		s.log.Error("[CreateClient] failed to update client", "client_id", id, "error", err)
+		s.log.Error("[UpdateClient] failed to update client", "client_id", id, "error", err)
 		return err
 	}
+
+	go func() {
+		client, err := s.persister.Client().GetClient(ctx, id)
+		if err != nil {
+			s.log.Error("[UpdateClient] failed to get client", "client_id", id, "error", err)
+			return
+		}
+
+		err = s.cache.SetClient(id, client)
+		if err != nil {
+			s.log.Error("[UpdateClient] failed to set client to cache", "client_id", id, "error", err)
+		}
+	}()
 
 	return nil
 }
@@ -69,6 +96,13 @@ func (s *Service) DeleteClient(ctx context.Context) error {
 		s.log.Error("[DeleteClient] failed to delete client", "client_id", id, "error", err)
 		return err
 	}
+
+	go func() {
+		err := s.cache.DeleteClient(id)
+		if err != nil {
+			s.log.Error("[DeleteClient] failed to delete client from cache", "client_id", id, "error", err)
+		}
+	}()
 
 	return nil
 }

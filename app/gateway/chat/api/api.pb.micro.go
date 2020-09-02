@@ -43,7 +43,7 @@ func NewChatEndpoints() []*api.Endpoint {
 // Client API for Chat service
 
 type ChatService interface {
-	PublishMessage(ctx context.Context, in *Empty, opts ...client.CallOption) (*Empty, error)
+	PushMessage(ctx context.Context, in *PushMessageReq, opts ...client.CallOption) (*Empty, error)
 }
 
 type chatService struct {
@@ -58,8 +58,8 @@ func NewChatService(name string, c client.Client) ChatService {
 	}
 }
 
-func (c *chatService) PublishMessage(ctx context.Context, in *Empty, opts ...client.CallOption) (*Empty, error) {
-	req := c.c.NewRequest(c.name, "Chat.PublishMessage", in)
+func (c *chatService) PushMessage(ctx context.Context, in *PushMessageReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "Chat.PushMessage", in)
 	out := new(Empty)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -71,12 +71,12 @@ func (c *chatService) PublishMessage(ctx context.Context, in *Empty, opts ...cli
 // Server API for Chat service
 
 type ChatHandler interface {
-	PublishMessage(context.Context, *Empty, *Empty) error
+	PushMessage(context.Context, *PushMessageReq, *Empty) error
 }
 
 func RegisterChatHandler(s server.Server, hdlr ChatHandler, opts ...server.HandlerOption) error {
 	type chat interface {
-		PublishMessage(ctx context.Context, in *Empty, out *Empty) error
+		PushMessage(ctx context.Context, in *PushMessageReq, out *Empty) error
 	}
 	type Chat struct {
 		chat
@@ -89,6 +89,6 @@ type chatHandler struct {
 	ChatHandler
 }
 
-func (h *chatHandler) PublishMessage(ctx context.Context, in *Empty, out *Empty) error {
-	return h.ChatHandler.PublishMessage(ctx, in, out)
+func (h *chatHandler) PushMessage(ctx context.Context, in *PushMessageReq, out *Empty) error {
+	return h.ChatHandler.PushMessage(ctx, in, out)
 }

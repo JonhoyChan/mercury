@@ -1,32 +1,31 @@
 package cache
 
 import (
-	"muhub/x"
-	"muhub/x/ecode"
+	"outgoing/x"
+	"outgoing/x/ecode"
 	"time"
 )
 
-var (
-	authTokenKey = "authToken:%v"
+const (
+	tokenKey = "token:%v"
 )
 
-// 获取用户Token
-func (c *Cache) GetAuthToken(uid string) string {
-	key := x.Sprintf(authTokenKey, uid)
-	token, _ := c.client.Get(key).Result()
-	return token
+func (c *Cache) GetClientID(token string) string {
+	key := x.Sprintf(tokenKey, token)
+	clientID, _ := c.client.Get(key).Result()
+	return clientID
 }
 
-func (c *Cache) SetAuthToken(uid, token string, lifetime time.Duration) error {
-	if uid == "" {
-		return ecode.NewError("the uid is missing")
-	} else if token == "" {
-		return ecode.NewError("the token is missing")
+func (c *Cache) SetClientID(token, clientID string, lifetime time.Duration) error {
+	if token == "" {
+		return ecode.NewError("token is missing")
+	} else if clientID == "" {
+		return ecode.NewError("client ID is missing")
 	} else if lifetime <= 0 {
 		return ecode.NewError("invalid lifetime")
 	}
-	key := x.Sprintf(authTokenKey, uid)
-	if err := c.client.Set(key, token, lifetime).Err(); err != nil {
+	key := x.Sprintf(tokenKey, token)
+	if err := c.client.Set(key, clientID, lifetime).Err(); err != nil {
 		return err
 	}
 

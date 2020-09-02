@@ -3,7 +3,9 @@ package service
 import (
 	"context"
 	"github.com/cenkalti/backoff/v4"
+	"github.com/micro/go-micro/v2/broker"
 	"github.com/micro/go-micro/v2/server"
+	"github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
 	"outgoing/app/service/chat/auth/jwt"
 	"outgoing/app/service/chat/auth/token"
@@ -32,6 +34,7 @@ type Service struct {
 	cache     persistence.Cacher
 	persister persistence.Persister
 	uidGen    types.UidGenerator
+	antsPool  *ants.PoolWithFunc
 }
 
 func NewService(c config.Provider) (*Service, error) {
@@ -61,6 +64,10 @@ func NewService(c config.Provider) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
+	err = s.withAntsPool()
+	if err != nil {
+		return nil, err
+	}
 
 	return s, nil
 }
@@ -68,31 +75,25 @@ func NewService(c config.Provider) (*Service, error) {
 func (s *Service) withTokenAuthenticator() error {
 	var err error
 	if s.token, err = token.NewAuthenticator(s.config); err != nil {
-		s.log.Error("unable to initialize the authenticator of token.", "error", err)
 		return err
 	}
-
 	return nil
 }
 
 func (s *Service) withJWTAuthenticator() error {
 	var err error
 	if s.jwt, err = jwt.NewAuthenticator(); err != nil {
-		s.log.Error("unable to initialize the authenticator of jwt.", "error", err)
 		return err
 	}
-
 	return nil
 }
 
 func (s *Service) withCache() error {
 	c, err := redis.NewClient(s.config)
 	if err != nil {
-		s.log.Error("unable to initialize the persister for redis, retrying", "error", err)
 		return err
 	}
 	s.cache = cache.NewCache(c)
-
 	return nil
 }
 
@@ -107,7 +108,6 @@ func (s *Service) withPersister() error {
 		backoff.Retry(func() error {
 			gormDB, err := orm.NewORM(s.config)
 			if err != nil {
-				s.log.Warn("unable to initialize the persister, retrying.", "error", err)
 				return err
 			}
 			//TODO 开发时使用，后续删除
@@ -121,12 +121,11 @@ func (s *Service) withPersister() error {
 			)
 			db, err := sqlx.Open(s.config)
 			if err != nil {
-				s.log.Error("Unable to initialize the persister for sqlx, retrying", "error", err)
 				return err
 			}
 			p := sql.NewPersister(db)
 			if err := p.Ping(); err != nil {
-				s.log.Error("Unable to ping the persister, retrying", "error", err)
+				s.log.Error("unable to ping the persister, retrying", "error", err)
 				return err
 			}
 			s.persister = p
@@ -137,7 +136,57 @@ func (s *Service) withPersister() error {
 
 func (s *Service) withUidGenerator() error {
 	if err := s.uidGen.Init(s.config); err != nil {
-		s.log.Error("Unable to initialize the generator for Uid", "error", err)
+		return err
+	}
+	return nil
+}
+
+func (s *Service) withAntsPool() error {
+	var err error
+	s.antsPool, err = ants.NewPoolWithFunc(100000, s.publish)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+type PublishMessage struct {
+	Topic   string
+	Message *broker.Message
+}
+
+func (s *Service) publish(payload interface{}) {
+	publicMessage, ok := payload.(*PublishMessage)
+	if !ok {
+		return
+	}
+
+	if err := broker.Publish(publicMessage.Topic, publicMessage.Message); err != nil {
+		s.log.Error("failed to publish message", "error", err)
+		return
+	}
+}
+
+type marshaler interface {
+	Marshal() ([]byte, error)
+}
+
+func (s *Service) invoke(topic string, m marshaler) error {
+	body, err := m.Marshal()
+	if err != nil {
+		return err
+	}
+
+	pm := &PublishMessage{
+		Topic: topic,
+		Message: &broker.Message{
+			Header: make(map[string]string),
+			Body:   body,
+		},
+	}
+
+	if err := s.antsPool.Invoke(pm); err != nil {
+		s.log.Error("failed to pool invoke", "error", err)
 		return err
 	}
 
@@ -153,7 +202,8 @@ func (s *Service) AuthenticateClientToken(fn server.HandlerFunc) server.HandlerF
 				var clientID string
 				_, err := s.token.Authenticate(f.String(), &clientID)
 				if err != nil {
-					return err
+					s.log.Error("[AuthenticateClientToken] failed to authenticating the token", "client_id", clientID, "error", err)
+					return ecode.ErrInvalidToken
 				}
 				ctx = s.SetContextClient(ctx, clientID)
 			}
@@ -163,49 +213,6 @@ func (s *Service) AuthenticateClientToken(fn server.HandlerFunc) server.HandlerF
 	})
 }
 
-func (s *Service) DecodeUid(uid string) int64 {
-	return s.uidGen.DecodeUid(types.ParseUidWithPrefix(uid, "uid"))
-}
-
-// Connect a connection
-func (s *Service) Connect(_ context.Context, uid, sid, serverID string) error {
-	s.log.Info("[Connect] request is received")
-
-	if err := s.cache.AddMapping(uid, sid, serverID); err != nil {
-		s.log.Error("[Connect] failed to add mapping", "uid", uid, "error", err)
-		return err
-	}
-
-	return nil
-}
-
-// Disconnect a connection
-func (s *Service) Disconnect(_ context.Context, uid, sid string) error {
-	s.log.Info("[Disconnect] request is received")
-
-	if err := s.cache.DeleteMapping(uid, sid); err != nil {
-		s.log.Error("[Disconnect] failed to delete mapping", "uid", uid, "error", err)
-		return err
-	}
-
-	return nil
-}
-
-// Heartbeat a connection
-func (s *Service) Heartbeat(_ context.Context, uid, sid, serverID string) error {
-	s.log.Info("[Heartbeat] request is received")
-
-	expired, err := s.cache.ExpireMapping(uid, sid)
-	if err != nil {
-		s.log.Error("[Heartbeat] failed to expire mapping", "uid", uid, "error", err)
-		return err
-	}
-	if !expired {
-		if err := s.cache.AddMapping(uid, sid, serverID); err != nil {
-			s.log.Error("[Heartbeat] failed to add mapping", "uid", uid, "error", err)
-			return err
-		}
-	}
-
-	return nil
+func (s *Service) DecodeUid(uid types.Uid) int64 {
+	return s.uidGen.DecodeUid(uid)
 }

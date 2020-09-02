@@ -1,4 +1,4 @@
-service_name: gateway.chat.comet
+service_name: mercury.comet
 version: latest
 register_ttl: 30s
 register_interval: 15s

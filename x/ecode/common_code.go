@@ -4,46 +4,38 @@ var (
 	OK           = add(200, "ok")
 	ResetContent = add(205, "reset content")
 
-	// 错误的请求
+	// Bad request
 	ErrBadRequest = add(400, "bad request")
-	// 权限不足
+	// Unauthorized
 	ErrUnauthorized = add(401, "unauthorized")
-	// 拒绝执行
+	// Forbidden
 	ErrForbidden = add(403, "forbidden")
-	// 资源找不到
+	// Not found
 	ErrNotFound = add(404, "not found")
-	// 请求方法不支持
+	// Method not allowed
 	ErrMethodNotAllowed = add(405, "method not allowed")
-	// 服务请求超时
+	// Request timeout
 	ErrRequestTimeout = add(408, "request timeout")
-	// 资源被锁定
+	// Locked
 	ErrLocked = add(423, "locked")
-	// 请求过于频繁
+	// Too many requests
 	ErrTooManyRequests = add(429, "too many requests")
-	// 服务内部错误
+	// Internal server
 	ErrInternalServer = add(500, "internal server")
 
-	// 无效的Token
+	// Invalid token
 	ErrInvalidToken = add(1001, "invalid token")
-	// Token已过期
-	ErrTokenExpired = add(1002, "token has expired")
-	// 异常
+	// TToken expired
+	ErrTokenExpired = add(1002, "token expired")
+	// Malformed
 	ErrMalformed = add(1003, "malformed")
-	// 数据已存在
-	ErrDataAlreadyExist = add(1004, "data already exist")
-	// 数据不存在
+	// Data already exists
+	ErrDataAlreadyExists = add(1004, "data already exists")
+	// Data does not exist
 	ErrDataDoesNotExist = add(1005, "data does not exist")
-	// 重复值
-	ErrDuplicate = add(1006, "duplicate value")
-	// 请求参数有误
-	ErrWrongParameter = add(1007, "wrong parameter")
+	// Wrong parameter
+	ErrWrongParameter = add(1006, "wrong parameter")
 
-	// 登录失败
-	ErrLoginFailed = add(2001, "login failed")
-	// 用户不存在
-	ErrUserNotFound = add(2002, "account not found")
-	// 手机号不正确
-	ErrPhoneNumber = add(2003, "phone number is incorrect")
-	// IP地址不正确
-	ErrIPAddress = add(2004, "ip address is incorrect")
+	// User not activated
+	ErrUserNotActivated = add(2001, "user not activated")
 )

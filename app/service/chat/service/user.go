@@ -4,6 +4,7 @@ import (
 	"context"
 	"outgoing/app/service/chat/api"
 	"outgoing/app/service/chat/persistence"
+	"outgoing/x/types"
 )
 
 func (s *Service) CreateUser(ctx context.Context, req *api.CreateUserReq) (string, error) {
@@ -25,46 +26,45 @@ func (s *Service) CreateUser(ctx context.Context, req *api.CreateUserReq) (strin
 	return uid.UID(), nil
 }
 
-func (s *Service) UpdateActivated(ctx context.Context, activated bool) error {
+func (s *Service) UpdateActivated(ctx context.Context, uid string, activated bool) error {
 	s.log.Info("[UpdateActivated] request is received")
 
-	u := s.MustGetContextUser(ctx)
-	if err := s.persister.User().UpdateActivated(ctx, u.ID, activated); err != nil {
-		s.log.Error("[UpdateActivated] failed to update user activated", "uid", u.UID, "activated", activated, "error", err)
+	if err := s.persister.User().UpdateActivated(ctx, s.DecodeUid(types.ParseUID(uid)), activated); err != nil {
+		s.log.Error("[UpdateActivated] failed to update user activated", "uid", uid, "activated", activated, "error", err)
 		return err
 	}
 
 	return nil
 }
 
-func (s *Service) DeleteUser(ctx context.Context) error {
+func (s *Service) DeleteUser(ctx context.Context, uid string) error {
 	s.log.Info("[DeleteUser] request is received")
 
-	u := s.MustGetContextUser(ctx)
-	if err := s.persister.User().Delete(ctx, u.ID); err != nil {
-		s.log.Error("[DeleteUser] failed to delete client", "uid", u.UID, "error", err)
+	if err := s.persister.User().Delete(ctx, s.DecodeUid(types.ParseUID(uid))); err != nil {
+		s.log.Error("[DeleteUser] failed to delete client", "uid", uid, "error", err)
 		return err
 	}
 
 	return nil
 }
 
-func (s *Service) GenerateUserToken(ctx context.Context) (string, string, error) {
+func (s *Service) GenerateUserToken(ctx context.Context, uid string) (string, string, error) {
 	s.log.Info("[GenerateUserToken] request is received")
 
 	clientID := s.MustGetContextClient(ctx)
-	client, err := s.persister.Client().GetClient(ctx, clientID)
+	client, err := s.getClient(ctx, clientID)
 	if err != nil {
 		s.log.Error("[GenerateUserToken] failed to get client", "client_id", clientID, "error", err)
 		return "", "", err
 	}
 
-	u := s.MustGetContextUser(ctx)
-	token, lifetime, err := s.jwt.GenerateToken(client.Name, []byte(client.TokenSecret), client.TokenExpire, u.UID)
+	token, lifetime, err := s.jwt.GenerateToken(client.Name, client.TokenSecret, client.TokenExpire, uid)
 	if err != nil {
-		s.log.Error("[GenerateUserToken] failed to generate token", "uid", u.UID, "error", err)
+		s.log.Error("[GenerateUserToken] failed to generate token", "uid", uid, "error", err)
 		return "", "", err
 	}
+
+	go s.cache.SetClientID(token, clientID, client.TokenExpire)
 
 	return token, lifetime, nil
 }

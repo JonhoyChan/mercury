@@ -25,6 +25,12 @@ const (
 	p2pBase64Unpadded = 22
 )
 
+// Default Uid prefix
+const (
+	PrefixUID = "uid"
+	PrefixGID = "gid"
+)
+
 // IsZero checks if Uid is uninitialized.
 func (uid Uid) IsZero() bool {
 	return uid == ZeroUid
@@ -138,18 +144,33 @@ func (uid Uid) PrefixId(prefix string) string {
 	return prefix + uid.String()
 }
 
-// UserId converts Uid to string prefixed with 'vid', like uidXXXXX
+// UserId converts Uid to string prefixed with 'uid'
 func (uid Uid) UID() string {
-	return uid.PrefixId("uid")
+	return uid.PrefixId(PrefixUID)
 }
 
-// ParseUserUID parses account VID of the form "uidXXXXXX"
+// UserId converts Uid to string prefixed with 'gid'
+func (uid Uid) GID() string {
+	return uid.PrefixId(PrefixGID)
+}
+
+// ParseUidWithPrefix parses Uid with the given prefix
 func ParseUidWithPrefix(s, prefix string) Uid {
 	var uid Uid
 	if strings.HasPrefix(s, prefix) {
 		_ = (&uid).UnmarshalText([]byte(s)[3:])
 	}
 	return uid
+}
+
+// ParseUID parses Uid with 'uid'
+func ParseUID(s string) Uid {
+	return ParseUidWithPrefix(s, PrefixUID)
+}
+
+// ParseGID parses Uid with 'gid'
+func ParseGID(s string) Uid {
+	return ParseUidWithPrefix(s, PrefixGID)
 }
 
 // UidSlice is a slice of Uids sorted in ascending order.
@@ -213,8 +234,7 @@ func (uid Uid) P2PName(u2 Uid) string {
 		} else if uid > u2 {
 			b1 = append(b2, b1...)
 		} else {
-			// Explicitly disable P2P with self
-			return ""
+			return "self" + base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b1)
 		}
 
 		return "p2p" + base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b1)
@@ -248,34 +268,4 @@ func ParseP2P(p2p string) (uid1, uid2 Uid, err error) {
 		err = errors.New("ParseP2P: missing or invalid prefix")
 	}
 	return
-}
-
-// TopicCategory is an enum of topic categories.
-type TopicCategory int
-
-const (
-	// TopicCategoryMe is a value denoting 'me' topic.
-	TopicCategoryMe TopicCategory = iota
-	// TopicCategoryP2P is a a value denoting 'p2p topic.
-	TopicCategoryP2P
-	// TopicCategoryGrp is a a value denoting group topic.
-	TopicCategoryGroup
-	// TopicCategorySystem is a constant indicating a system topic.
-	TopicCategorySystem
-)
-
-// GetTopicCategory given topic name returns topic category.
-func GetTopicCategory(name string) TopicCategory {
-	switch name[:3] {
-	case "me":
-		return TopicCategoryMe
-	case "p2p":
-		return TopicCategoryP2P
-	case "group":
-		return TopicCategoryGroup
-	case "system":
-		return TopicCategorySystem
-	default:
-		panic("invalid topic category for name '" + name + "'")
-	}
 }

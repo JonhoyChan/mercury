@@ -21,10 +21,11 @@ INSERT INTO
         updated_at,
 		client_id,
         name,
-        uid
+        uid,
+		activated
     )
 VALUES
-    ($1, $2, $2, $3, $4, $5);
+    ($1, $2, $2, $3, $4, $5, $6);
 `
 
 	isFriendExistSQL = `
@@ -71,6 +72,20 @@ AND
 `
 )
 
+func (p *userPersister) CheckActivated(_ context.Context, clientID, uid string) (bool, error) {
+	var isExist int
+	err := p.db.QueryRow("SELECT 1 FROM public.user WHERE client_id = $1 AND uid = $2 AND activated = $3 limit 1;", clientID, uid, true).
+		Scan(&isExist)
+	if err != nil {
+		if sqlx.IsErrNoRows(err) {
+			return false, nil
+		}
+		return false, err
+	}
+
+	return isExist == 1, nil
+}
+
 func (p *userPersister) Create(_ context.Context, in *persistence.UserCreate) error {
 	tx, err := p.db.Begin()
 	if err != nil {
@@ -89,12 +104,12 @@ func (p *userPersister) Create(_ context.Context, in *persistence.UserCreate) er
 	}
 
 	if isExist == 1 {
-		err = ecode.ErrDataAlreadyExist
+		err = ecode.ErrDataAlreadyExists
 		return err
 	}
 
 	now := time.Now().Unix()
-	if err = tx.Exec(insertUserSQL, 1, in.UserID, now, in.ClientID, in.Name, in.UID); err != nil {
+	if err = tx.Exec(insertUserSQL, 1, in.UserID, now, in.ClientID, in.Name, in.UID, true); err != nil {
 		return err
 	}
 
@@ -124,7 +139,7 @@ func (p *userPersister) AddFriend(_ context.Context, in *persistence.UserFriend)
 	}
 
 	if isExist == 1 {
-		return ecode.ErrDataAlreadyExist
+		return ecode.ErrDataAlreadyExists
 	}
 
 	if err := p.db.QueryRow("SELECT 1 FROM public.user WHERE client_id = $1 AND id = $2 limit 1;", in.ClientID, in.FriendUserID).Scan(&isExist); err != nil && err != sqlx.ErrNoRows {

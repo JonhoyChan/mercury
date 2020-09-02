@@ -1,10 +1,14 @@
 package persistence
 
+import (
+	"time"
+)
+
 type Client struct {
 	ID          string
 	Name        string
-	TokenSecret string
-	TokenExpire int64
+	TokenSecret []byte
+	TokenExpire time.Duration
 }
 
 type ClientCreate struct {

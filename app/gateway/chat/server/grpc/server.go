@@ -2,6 +2,10 @@ package grpc
 
 import (
 	"context"
+	"github.com/micro/go-micro/v2/registry"
+	"github.com/micro/go-micro/v2/server"
+	"github.com/micro/go-micro/v2/server/grpc"
+	"github.com/micro/go-plugins/registry/etcdv3/v2"
 	"outgoing/app/gateway/chat/api"
 	"outgoing/app/gateway/chat/config"
 	"outgoing/app/gateway/chat/service"
@@ -9,14 +13,6 @@ import (
 	"outgoing/x/ecode"
 	"outgoing/x/log"
 	"strings"
-
-	"github.com/micro/go-micro/v2"
-
-	ratelimit "github.com/micro/go-plugins/wrapper/ratelimiter/uber/v2"
-
-	"github.com/micro/go-micro/v2/registry"
-	"github.com/micro/go-micro/v2/server"
-	"github.com/micro/go-plugins/registry/etcdv3/v2"
 )
 
 type grpcServer struct {
@@ -25,14 +21,14 @@ type grpcServer struct {
 }
 
 // 注册服务
-func Init(c config.Provider) {
-	opts := []micro.Option{
-		micro.Server(server.NewServer(server.Id(c.ID()))),
-		micro.Name(c.Name()),
-		micro.Version(c.Version()),
-		micro.RegisterTTL(c.RegisterTTL()),
-		micro.RegisterInterval(c.RegisterInterval()),
-		micro.Address(c.RPCAddress()),
+func Init(c config.Provider, srv *service.Service) {
+	opts := []server.Option{
+		server.Id(c.ID()),
+		server.Name(c.Name()),
+		server.Version(c.Version()),
+		server.RegisterTTL(c.RegisterTTL()),
+		server.RegisterInterval(c.RegisterInterval()),
+		server.Address(c.RPCAddress()),
 	}
 
 	if c.Etcd().Enable {
@@ -45,34 +41,38 @@ func Init(c config.Provider) {
 
 			op.Addrs = addresses
 		})
-		opts = append(opts, micro.Registry(etcdv3Registry))
+		opts = append(opts, server.Registry(etcdv3Registry))
 	}
 
-	opts = append(opts, micro.WrapHandler(
-		ratelimit.NewHandlerWrapper(1024),
-		ecode.MicroHandlerFunc,
-	))
-	microServer := micro.NewService(opts...)
-	microServer.Init()
+	opts = append(opts, server.WrapHandler(ecode.MicroHandlerFunc))
+	microServer := grpc.NewServer(opts...)
+	if err := microServer.Init(); err != nil {
+		panic("unable to initialize server:" + err.Error())
+	}
 
-	s := &grpcServer{}
+	s := &grpcServer{
+		srv: srv,
+	}
 
-	if err := api.RegisterChatHandler(microServer.Server(), s); err != nil {
-		panic("unable to register grpc service:" + err.Error())
+	if err := api.RegisterChatHandler(microServer, s); err != nil {
+		panic("unable to register grpc server:" + err.Error())
 	}
 
 	go func() {
-		if err := microServer.Run(); err != nil {
-			panic("unable to start service:" + err.Error())
+		if err := microServer.Start(); err != nil {
+			panic("unable to start server:" + err.Error())
 		}
 	}()
 }
 
-func (s *grpcServer) PublishMessage(ctx context.Context, req *api.Empty, resp *api.Empty) error {
-	log.Info("[PublishMessage] request is received")
+func (s *grpcServer) PushMessage(ctx context.Context, req *api.PushMessageReq, resp *api.Empty) error {
+	log.Info("[PushMessage] request is received")
 
-	session := s.srv.SessionStore.Get("req.SID")
-	if session != nil {
+	for _, sid := range req.SIDs {
+		session := s.srv.SessionStore.Get(sid)
+		if session != nil {
+			session.Push(req.Data)
+		}
 	}
 	return nil
 }

@@ -6,10 +6,8 @@ import (
 	"outgoing/app/gateway/chat/service"
 	"outgoing/app/gateway/chat/stats"
 	"outgoing/x"
-	"outgoing/x/ecode"
 	"outgoing/x/ginx"
 	"outgoing/x/log"
-	"outgoing/x/secretboxer"
 	"strings"
 
 	"outgoing/x/websocket"

@@ -8,87 +8,11 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 
 message Empty{}
 
-message Proto {
-    // protocol version
-    int32 version = 1 [(gogoproto.jsontag) = "version"];
-    // operation for request
-    int32 operation = 2 [(gogoproto.jsontag) = "operation"];
-    // binary body bytes
-    bytes body = 4 [(gogoproto.jsontag) = "body"];
-}
-
-message Error {
-    // error code
-    uint32 code = 1 [(gogoproto.jsontag) = "code"];
-    // error message
-    string message = 2 [(gogoproto.jsontag) = "message"];
-}
-
-message Response {
-    // client-provided message id
-    string mid = 1 [(gogoproto.customname) = "MID", (gogoproto.jsontag) = "mid"];
-    // code indicating success or failure of the request
-    int32 code = 2 [(gogoproto.customtype) = "int", (gogoproto.nullable) = false, (gogoproto.jsontag) = "code"];
-    // message with more details about the result
-    string message = 3 [(gogoproto.jsontag) = "message"];
-    // timestamp
-    int64 timestamp = 4 [(gogoproto.jsontag) = "timestamp"];
-}
-
-message HandshakeRequest {
-    // client-provided message id
-    string mid = 1 [(gogoproto.customname) = "MID", (gogoproto.jsontag) = "mid,omitempty"];
-    // version of the wire protocol supported by the client
-    string version = 2 [(gogoproto.jsontag) = "version", (gogoproto.moretags) = "validate:\"required\""];
-    // user agent identifying client software
-    string user_agent = 3 [(gogoproto.jsontag) = "user_agent,omitempty"];
-    // connected device for the purpose of push notifications
-    string platform = 4 [(gogoproto.jsontag) = "platform,omitempty"];
-    // human language of the client device
-    string language = 5 [(gogoproto.jsontag) = "language,omitempty"];
-    // client's unique device ID
-    string device_id = 6 [(gogoproto.customname) = "DeviceID", (gogoproto.jsontag) = "device_id"];
-    // authentication token
-    string token = 7 [(gogoproto.jsontag) = "token", (gogoproto.moretags) = "validate:\"required\""];
-}
-
-message HeartbeatRequest {
-    // client-provided message id
-    string mid = 1 [(gogoproto.customname) = "MID", (gogoproto.jsontag) = "mid,omitempty"];
-}
-
-message AuthenticateRequest {
-    // client-provided message id
-    string mid = 1 [(gogoproto.customname) = "MID", (gogoproto.jsontag) = "mid,omitempty"];
-    // authentication token
-    string token = 2 [(gogoproto.jsontag) = "token", (gogoproto.moretags) = "validate:\"required\""];
-}
-
-message SubscribeRequest {
-    // client-provided message id
-    string mid = 1 [(gogoproto.customname) = "MID", (gogoproto.jsontag) = "mid,omitempty"];
-    // topic to be subscribed or attached to
-    string topic = 2 [(gogoproto.jsontag) = "topic", (gogoproto.moretags) = "validate:\"required\""];
-}
-
-message PublishRequest {
-    // client-provided message id
-    string mid = 1 [(gogoproto.customname) = "MID", (gogoproto.jsontag) = "mid,omitempty"];
-    // topic to publish to
-    string topic = 2 [(gogoproto.jsontag) = "topic", (gogoproto.moretags) = "validate:\"required\""];
-    // suppress echo (see below)
-    bool no_echo = 3 [(gogoproto.jsontag) = "no_echo,omitempty"];
-    // application-defined content to publish to topic subscribers
-    Content content = 4 [(gogoproto.jsontag) = "mid", (gogoproto.moretags) = "validate:\"required\""];
-}
-
-message Content {
-    // message type
-    string message_type = 1 [(gogoproto.jsontag) = "message_type"];
-    // message body
-    bytes message_body = 2 [(gogoproto.jsontag) = "message_body"];
+message PushMessageReq {
+    repeated string sids = 1  [(gogoproto.customname) = "SIDs"];
+    bytes data = 2;
 }
 
 service Chat {
-    rpc PublishMessage(Empty) returns (Empty);
+    rpc PushMessage(PushMessageReq) returns (Empty);
 }

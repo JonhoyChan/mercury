@@ -1,4 +1,4 @@
-service_name: service.chat.logic
+service_name: mercury.logic
 version: latest
 register_ttl: 30s
 register_interval: 15s
@@ -20,10 +20,11 @@ registry:
 
 broker:
   stan:
-    enabled: true
-    addrs: "nats://192.168.13.119:4222"
-    clusterID: test-cluster
-    durableName: outgoing-durable
+    enable: true
+    addresses:
+      - nats://192.168.120.88:4222
+    cluster_id: test-cluster
+    durable_name: mercury-durable
 
 database:
   driver: postgres
@@ -62,3 +63,6 @@ generator:
   uid:
     work_id: 1
     key: la6YsO+bNX/+XIkO
+
+topic:
+  push_message: mercury-push-message

@@ -1,6 +1,7 @@
 package service
 
 import (
+	"github.com/micro/go-micro/v2/broker"
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/client/grpc"
 	"github.com/micro/go-micro/v2/registry"
@@ -12,35 +13,50 @@ import (
 	"time"
 )
 
+var grpcClient cApi.ChatService
+
 type Service struct {
 	config       config.Provider
 	registry     registry.Registry
+	broker       broker.Broker
 	cometServers map[string]*Comet
 	watchChan    chan bool
 	stopChan     chan struct{}
-	chatService  cApi.ChatService
 }
 
 func NewService(config config.Provider) *Service {
-	opts := []client.Option{
-		client.Retries(2),
-		client.Retry(ecode.RetryOnMicroError),
-		client.WrapCall(ecode.MicroCallFunc),
-	}
-
-	c := grpc.NewClient(opts...)
-
 	return &Service{
-		config:      config,
-		watchChan:   make(chan bool, 1),
-		stopChan:    make(chan struct{}),
-		chatService: cApi.NewChatService(config.CometServiceName(), c),
+		config:    config,
+		watchChan: make(chan bool, 1),
+		stopChan:  make(chan struct{}),
 	}
 }
 
-func (s *Service) WithRegistry(registry registry.Registry) {
+func (s *Service) WithRegistry(r registry.Registry) {
 	if s.registry == nil {
-		s.registry = registry
+		s.registry = r
+
+		opts := []client.Option{
+			client.Retries(2),
+			client.Retry(ecode.RetryOnMicroError),
+			client.WrapCall(ecode.MicroCallFunc),
+			client.Registry(r),
+		}
+
+		c := grpc.NewClient(opts...)
+
+		grpcClient = cApi.NewChatService(s.config.CometServiceName(), c)
+	}
+}
+
+func (s *Service) WithBroker(b broker.Broker) {
+	if s.broker == nil {
+		s.broker = b
+
+		if _, err := s.broker.Subscribe(s.config.PushMessageTopic(), s.subscribePushMessage); err != nil {
+			log.Error("[WatchComet] failed to subscribe topic", "topic", s.config.PushMessageTopic(), "error", err)
+			return
+		}
 	}
 }
 
@@ -158,12 +174,3 @@ func (s *Service) syncCometNodes() error {
 	s.cometServers = comets
 	return nil
 }
-
-//func (s *Service) PushMessage(serverID string) error {
-//	comet, ok := s.cometServers[serverID]
-//	if !ok {
-//		return
-//	}
-//
-//	s.chatService.Connect(comet.ctx, &cApi.ConnectReq{}, comet.callOption)
-//}

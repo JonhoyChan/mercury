@@ -45,7 +45,7 @@ func main() {
 	srv := service.NewService(c.Logger())
 
 	http.Init(c, srv)
-	grpc.Init(c)
+	grpc.Init(c, srv)
 
 	// Signal handler
 	signalChan := make(chan os.Signal, 1)
@@ -63,4 +63,3 @@ func main() {
 		}
 	}
 }
-

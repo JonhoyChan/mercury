@@ -11,7 +11,8 @@ import (
 )
 
 const (
-	viperKeyCometServiceName = "rpcServices.comet.serviceName"
+	viperKeyCometServiceName = "rpc_services.comet.service_name"
+	viperKeyTopicPushMessage = "topic.push_message"
 )
 
 var v *viper.Viper
@@ -73,6 +74,19 @@ func (p *ViperProvider) Etcd() *config.EtcdConfig {
 	}
 }
 
+func (p *ViperProvider) Stan() *config.StanConfig {
+	return &config.StanConfig{
+		Enable:      v.GetBool(config.ViperKeyStanEnable),
+		Addresses:   v.GetStringSlice(config.ViperKeyStanAddresses),
+		ClusterID:   v.GetString(config.ViperKeyStanClusterID),
+		DurableName: v.GetString(config.ViperKeyStanDurableName),
+	}
+}
+
 func (p *ViperProvider) CometServiceName() string {
 	return v.GetString(viperKeyCometServiceName)
+}
+
+func (p *ViperProvider) PushMessageTopic() string {
+	return v.GetString(viperKeyTopicPushMessage)
 }

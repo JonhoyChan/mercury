@@ -12,12 +12,17 @@ import (
 )
 
 var (
-	apiClient api.ChatAdminService
-	ctx       context.Context
+	apiAdminClient api.ChatAdminService
+	apiClient      api.ChatService
+	ctx            context.Context
 )
 
 func init() {
-	apiClient = api.NewChatAdminService("service.chat.logic", grpc.NewClient(
+	apiAdminClient = api.NewChatAdminService("mercury.logic", grpc.NewClient(
+		client.Retry(ecode.RetryOnMicroError),
+		client.WrapCall(ecode.MicroCallFunc)),
+	)
+	apiClient = api.NewChatService("mercury.logic", grpc.NewClient(
 		client.Retry(ecode.RetryOnMicroError),
 		client.WrapCall(ecode.MicroCallFunc)),
 	)
@@ -27,7 +32,7 @@ func init() {
 func TestGrpcServer_Client(t *testing.T) {
 	var clientID, clientSecret string
 	t.Run("Create Client", func(t *testing.T) {
-		resp, err := apiClient.CreateClient(ctx, &api.CreateClientReq{
+		resp, err := apiAdminClient.CreateClient(ctx, &api.CreateClientReq{
 			Name:        "mercury",
 			TokenSecret: "6ZG~izEhm1wGfITYR2Sx6cClCC",
 			TokenExpire: 604800,
@@ -40,7 +45,7 @@ func TestGrpcServer_Client(t *testing.T) {
 
 	var token string
 	t.Run("Generate token", func(t *testing.T) {
-		resp, err := apiClient.GenerateToken(ctx, &api.GenerateTokenReq{
+		resp, err := apiAdminClient.GenerateToken(ctx, &api.GenerateTokenReq{
 			ClientID:     clientID,
 			ClientSecret: clientSecret,
 		})
@@ -51,7 +56,7 @@ func TestGrpcServer_Client(t *testing.T) {
 	})
 
 	t.Run("Update Client", func(t *testing.T) {
-		_, err := apiClient.UpdateClient(ctx, &api.UpdateClientReq{
+		_, err := apiAdminClient.UpdateClient(ctx, &api.UpdateClientReq{
 			Token: token,
 			TokenSecret: &api.StringValue{
 				Value: "chQBriRm7i0bOGbDhTGTCeNzGd",
@@ -64,7 +69,7 @@ func TestGrpcServer_Client(t *testing.T) {
 	})
 
 	t.Run("Delete Client", func(t *testing.T) {
-		_, err := apiClient.DeleteClient(ctx, &api.DeleteClientReq{
+		_, err := apiAdminClient.DeleteClient(ctx, &api.DeleteClientReq{
 			Token: token,
 		})
 		require.Nil(t, err)
@@ -74,7 +79,7 @@ func TestGrpcServer_Client(t *testing.T) {
 func TestGrpcServer_User(t *testing.T) {
 	var token string
 	t.Run("Generate token", func(t *testing.T) {
-		resp, err := apiClient.GenerateToken(ctx, &api.GenerateTokenReq{
+		resp, err := apiAdminClient.GenerateToken(ctx, &api.GenerateTokenReq{
 			ClientID:     "c4ff4ca9-6f2f-4fdb-8481-8460c3ace3b0",
 			ClientSecret: "Aiz_KDuKV3Bkdv9OYtF3Tv1ZYU",
 		})
@@ -86,7 +91,7 @@ func TestGrpcServer_User(t *testing.T) {
 
 	var uid string
 	t.Run("Create user", func(t *testing.T) {
-		resp, err := apiClient.CreateUser(ctx, &api.CreateUserReq{
+		resp, err := apiAdminClient.CreateUser(ctx, &api.CreateUserReq{
 			Token: token,
 			Name:  "Jonhoy",
 		})
@@ -97,9 +102,9 @@ func TestGrpcServer_User(t *testing.T) {
 	})
 
 	t.Run("Generate user token", func(t *testing.T) {
-		resp, err := apiClient.GenerateUserToken(ctx, &api.GenerateUserTokenReq{
-			Token: token,
-			UID:   uid,
+		resp, err := apiAdminClient.GenerateUserToken(ctx, &api.GenerateUserTokenReq{
+			Token: "7b2245787069726573223a313630303136353338362c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227d1c249a99733d0ae591455211e62a4fa9843018d84ff583785c61a7a396343995",
+			UID:   "uid7KA8fY5Jb3A",
 		})
 		require.Nil(t, err)
 
@@ -107,7 +112,7 @@ func TestGrpcServer_User(t *testing.T) {
 	})
 
 	t.Run("Update user activated", func(t *testing.T) {
-		_, err := apiClient.UpdateActivated(ctx, &api.UpdateActivatedReq{
+		_, err := apiAdminClient.UpdateActivated(ctx, &api.UpdateActivatedReq{
 			Token:     token,
 			UID:       uid,
 			Activated: false,
@@ -116,10 +121,27 @@ func TestGrpcServer_User(t *testing.T) {
 	})
 
 	t.Run("Delete user", func(t *testing.T) {
-		_, err := apiClient.DeleteUser(ctx, &api.DeleteUserReq{
+		_, err := apiAdminClient.DeleteUser(ctx, &api.DeleteUserReq{
 			Token: token,
 			UID:   uid,
 		})
 		require.Nil(t, err)
+	})
+}
+
+func TestGrpcServer_PushMessage(t *testing.T) {
+	t.Run("send message", func(t *testing.T) {
+		resp, err := apiClient.PushMessage(ctx, &api.PushMessageReq{
+			ClientID:    "c4ff4ca9-6f2f-4fdb-8481-8460c3ace3b0",
+			MessageType: api.MessageTypeSingle,
+			Sender:      "uiduN_f_2oWkUQ",
+			Receiver:    "uid7KA8fY5Jb3A",
+			ContentType: api.ContentTypeText,
+			Body:        []byte(`{"content": "Hello, World!"}`),
+			Mentions:    nil,
+		})
+		require.Nil(t, err)
+
+		t.Logf("sequence: %d", resp.Sequence)
 	})
 }

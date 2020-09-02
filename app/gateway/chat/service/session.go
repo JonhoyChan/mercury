@@ -3,7 +3,7 @@ package service
 import (
 	"context"
 	"encoding/json"
-	"outgoing/app/gateway/chat/api"
+	chatApi "outgoing/app/service/chat/api"
 	"outgoing/x"
 	"outgoing/x/ecode"
 	"outgoing/x/log"
@@ -74,10 +74,10 @@ type Session struct {
 	platform string
 	// Human language of the client.
 	language string
+	// ID of the client to which the current user belongs
+	clientID string
 	// ID of the current user or 0.
 	uid types.Uid
-	// Authentication level - NONE (unset), ANON, AUTH, ROOT.
-	authLevel types.AuthLevel
 	// Time when the session received any packer from client.
 	lastAction time.Time
 	// Outbound messages, buffered.
@@ -161,10 +161,8 @@ func (s *Session) writeLoop() {
 }
 
 type Proto struct {
-	// protocol version
-	Version int32 `json:"version"`
 	// operation for request
-	Operation int32 `json:"operation"`
+	Operation types.Operation `json:"operation"`
 	// binary body bytes
 	Body json.RawMessage `json:"body"`
 }
@@ -201,13 +199,15 @@ func (s *Session) dispatch(p *Proto) {
 	timestamp := s.lastAction.Unix()
 
 	var handler handlerFunc
-	switch types.Operation(p.Operation) {
+	switch p.Operation {
 	case types.OperationHandshake:
 		handler = s.handshake
 	case types.OperationHeartbeat:
 		handler = s.heartbeat
-	case types.OperationAuthenticate:
-		handler = s.authenticate
+	case types.OperationConnect:
+		handler = s.connect
+	case types.OperationPush:
+		handler = s.pushMessage
 	default:
 		// Unknown operation
 		log.Debug("[Dispatch] unknown operation", log.Ctx{"sid": s.sid})
@@ -232,10 +232,14 @@ func (s *Session) handshake(message *ServerMessage) []byte {
 		return ErrMalformed("", message.Timestamp)
 	}
 
-	var req api.HandshakeRequest
+	var req HandshakeRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
 		log.Warn("[Handshake] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
 		return ErrMalformed("", message.Timestamp)
+	}
+
+	if req.Token == "" || req.UserAgent == "" {
+		return ErrAuthRequired(req.MID, message.Timestamp)
 	}
 
 	if s.version == 0 {
@@ -250,11 +254,7 @@ func (s *Session) handshake(message *ServerMessage) []byte {
 			return ErrVersionNotSupported(req.MID, message.Timestamp)
 		}
 
-		if req.Token == "" || req.UserAgent == "" {
-			return ErrMalformed(req.MID, message.Timestamp)
-		}
-
-		uid, authLevel, err := s.srv.authenticate(s.ctx, req.Token, s.sid, s.serverID)
+		clientID, uid, err := s.srv.connect(s.ctx, req.Token, s.sid, s.serverID)
 		if err != nil {
 			log.Error("[Authenticate] failed to authenticate token", log.Ctx{"error": err, "sid": s.sid, "token": req.Token})
 			return ErrAuthFailed(req.MID, message.Timestamp)
@@ -272,74 +272,118 @@ func (s *Session) handshake(message *ServerMessage) []byte {
 		// Only set uid in the first time authenticate.
 		// Because uid is unique and will never change.
 		if s.uid.IsZero() {
+			s.clientID = clientID
 			s.uid = uid
 		}
-		s.authLevel = authLevel
 	}
 	s.language = req.Language
 
-	return NoErr(req.MID, message.Timestamp)
+	return NoErr(req.MID, message.Timestamp, nil)
 }
 
 func (s *Session) heartbeat(message *ServerMessage) []byte {
 	if message.Data == nil {
-		log.Debug("[Heartbeat] proto body is nil", log.Ctx{"sid": s.sid})
+		log.Debug("[Heartbeat] proto body is nil", "sid", s.sid)
 		return ErrMalformed("", message.Timestamp)
 	}
 
-	var req api.HeartbeatRequest
+	var req HeartbeatRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
-		log.Warn("[Heartbeat] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
+		log.Warn("[Heartbeat] failed to unmarshal", "sid", s.sid, "error", err)
 		return ErrMalformed("", message.Timestamp)
 	}
 
 	if s.uid.IsZero() {
-		log.Debug("[Heartbeat] uid is zero", log.Ctx{"sid": s.sid})
 		return ErrAuthRequired(req.MID, message.Timestamp)
 	}
 
 	if err := s.srv.heartbeat(s.ctx, s.uid.UID(), s.sid, s.serverID); err != nil {
-		log.Error("[Heartbeat] failed to heartbeat", log.Ctx{"error": err, "uid": s.uid.UID(), "sid": s.sid})
+		log.Error("[Heartbeat] failed to heartbeat", "sid", s.sid, "uid", s, s.uid.UID(), "error", err)
 		return ErrInternalServer(req.MID, message.Timestamp)
 	}
 
-	return NoErr(req.MID, message.Timestamp)
+	return NoErr(req.MID, message.Timestamp, nil)
 }
 
-func (s *Session) authenticate(message *ServerMessage) []byte {
+func (s *Session) connect(message *ServerMessage) []byte {
 	if message.Data == nil {
-		log.Debug("[Authenticate] proto body is nil", log.Ctx{"sid": s.sid})
+		log.Debug("[Connect] proto body is nil", "sid", s.sid)
 		return ErrMalformed("", message.Timestamp)
 	}
 
-	var req api.AuthenticateRequest
+	var req ConnectRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
-		log.Warn("[Authenticate] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
+		log.Warn("[Connect] failed to unmarshal", "sid", s.sid, "error", err)
 		return ErrMalformed("", message.Timestamp)
 	}
 
-	uid, authLevel, err := s.srv.authenticate(s.ctx, req.Token, s.sid, s.serverID)
+	if req.Token == "" {
+		return ErrAuthRequired(req.MID, message.Timestamp)
+	}
+
+	clientID, uid, err := s.srv.connect(s.ctx, req.Token, s.sid, s.serverID)
 	if err != nil {
-		log.Error("[Authenticate] failed to authenticate token", log.Ctx{"error": err, "sid": s.sid, "token": ""})
+		log.Error("[Connect] failed to authenticate token", "sid", s.sid, "error", err)
 		return ErrAuthFailed(req.MID, message.Timestamp)
 	}
 
 	// Only set uid in the first time authenticate.
 	// Because uid is unique and will never change.
 	if s.uid.IsZero() {
+		s.clientID = clientID
 		s.uid = uid
 	}
-	s.authLevel = authLevel
 
-	return NoErr(req.MID, message.Timestamp)
+	return NoErr(req.MID, message.Timestamp, nil)
+}
+
+func (s *Session) pushMessage(message *ServerMessage) []byte {
+	if message.Data == nil {
+		log.Debug("[PushMessage] proto body is nil", "sid", s.sid)
+		return ErrMalformed("", message.Timestamp)
+	}
+
+	var req PushMessageRequest
+	if err := s.deserialize(&req, message.Data); err != nil {
+		log.Warn("[Connect] failed to unmarshal", "sid", s.sid, "error", err)
+		return ErrMalformed("", message.Timestamp)
+	}
+
+	if s.uid.IsZero() {
+		return ErrAuthRequired(req.MID, message.Timestamp)
+	}
+
+	body, err := req.GetBody()
+	if err != nil {
+		return ErrMalformed(req.MID, message.Timestamp)
+	}
+
+	messageID, sequence, err := s.srv.pushMessage(s.ctx, &chatApi.PushMessageReq{
+		ClientID:    s.clientID,
+		SID:         s.sid,
+		MessageType: chatApi.MessageType(req.MessageType),
+		Sender:      s.uid.UID(),
+		Receiver:    req.Receiver,
+		ContentType: chatApi.ContentType(req.ContentType),
+		Body:        body,
+		Mentions:    req.Mentions,
+	})
+	if err != nil {
+		log.Error("[Connect] failed to authenticate token", "sid", s.sid, "error", err)
+		return ErrInternalServer(req.MID, message.Timestamp)
+	}
+
+	resp := &PushMessageResponse{
+		MessageID: messageID,
+		Sequence:  sequence,
+	}
+	return NoErr(req.MID, message.Timestamp, resp)
 }
 
 func (s *Session) serialize(p *Proto, body []byte) []byte {
 	if p == nil {
-		//p = api.NewProto(int32(types.OperationUnknown))
 		p = &Proto{
-			Version:   api.ProtocolVersion,
-			Operation: int32(types.OperationUnknown),
+			Operation: types.OperationUnknown,
 		}
 	}
 	p.Body = body
@@ -356,8 +400,7 @@ func (s *Session) deserialize(v unmarshaler, body []byte) error {
 	if v == nil {
 		return ecode.NewError("unmarshaler can not be nil")
 	}
-	//return v.Unmarshal(body)
-	return json.Unmarshal(body, v)
+	return v.Unmarshal(body)
 }
 
 // queueOut attempts to send a ServerComMessage to a session; if the send buffer is full,
@@ -373,4 +416,11 @@ func (s *Session) queueOut(p *Proto, body []byte) bool {
 		return false
 	}
 	return true
+}
+
+func (s *Session) Push(body []byte) bool {
+	p := &Proto{
+		Operation: types.OperationPush,
+	}
+	return s.queueOut(p, body)
 }

@@ -10,7 +10,7 @@ import (
 )
 
 type Authenticator interface {
-	GenerateToken(issuer string, key []byte, expire int64, data interface{}) (string, string, error)
+	GenerateToken(issuer string, key []byte, expire time.Duration, data interface{}) (string, string, error)
 
 	Authenticate(token, issuer string, key []byte, out interface{}) (string, error)
 }
@@ -33,7 +33,7 @@ type tokenLayout struct {
 	Data []byte
 }
 
-func (a *authenticator) generateToken(issuer string, key []byte, expire int64, data interface{}) (string, string, error) {
+func (a *authenticator) generateToken(issuer string, key []byte, expire time.Duration, data interface{}) (string, string, error) {
 	var layout tokenLayout
 
 	switch v := data.(type) {
@@ -49,7 +49,7 @@ func (a *authenticator) generateToken(issuer string, key []byte, expire int64, d
 
 	var lifetime string
 	if expire > 0 {
-		expires := time.Now().Add(time.Duration(expire) * time.Second).UTC().Round(time.Millisecond)
+		expires := time.Now().Add(expire).UTC().Round(time.Millisecond)
 		layout.Expires = expires.Unix()
 		standardClaims.ExpiresAt = expires.Unix()
 		lifetime = time.Until(expires).String()
@@ -74,7 +74,7 @@ func (a *authenticator) generateToken(issuer string, key []byte, expire int64, d
 }
 
 // GenerateToken generates a new token.
-func (a *authenticator) GenerateToken(issuer string, key []byte, expire int64, data interface{}) (string, string, error) {
+func (a *authenticator) GenerateToken(issuer string, key []byte, expire time.Duration, data interface{}) (string, string, error) {
 	return a.generateToken(issuer, key, expire, data)
 }
 

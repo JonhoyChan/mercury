@@ -13,11 +13,9 @@ const (
 	OperationUnknown Operation = iota
 	OperationHandshake
 	OperationHeartbeat
-	OperationAuthenticate
+	OperationConnect
 	OperationSync
-	OperationPublish
-	OperationSubscribe
-	OperationUnsubscribe
+	OperationPush
 )
 
 // String implements Stringer interface: gets human-readable name for a numeric operation.
@@ -36,16 +34,12 @@ func ParseOperation(name string) Operation {
 		return OperationHandshake
 	case "heartbeat":
 		return OperationHeartbeat
-	case "authenticate":
-		return OperationAuthenticate
+	case "connect":
+		return OperationConnect
 	case "sync":
 		return OperationSync
-	case "publish":
-		return OperationPublish
-	case "subscribe":
-		return OperationSubscribe
-	case "unsubscribe":
-		return OperationUnsubscribe
+	case "push":
+		return OperationPush
 	default:
 		return OperationUnknown
 	}
@@ -58,16 +52,12 @@ func (o Operation) MarshalText() ([]byte, error) {
 		return []byte("handshake"), nil
 	case OperationHeartbeat:
 		return []byte("heartbeat"), nil
-	case OperationAuthenticate:
-		return []byte("authenticate"), nil
+	case OperationConnect:
+		return []byte("connect"), nil
 	case OperationSync:
 		return []byte("sync"), nil
-	case OperationPublish:
-		return []byte("publish"), nil
-	case OperationSubscribe:
-		return []byte("subscribe"), nil
-	case OperationUnsubscribe:
-		return []byte("unsubscribe"), nil
+	case OperationPush:
+		return []byte("push"), nil
 	default:
 		return []byte("unknown"), nil
 	}
@@ -80,16 +70,12 @@ func (o *Operation) UnmarshalText(b []byte) error {
 		*o = OperationHandshake
 	case "heartbeat":
 		*o = OperationHeartbeat
-	case "authenticate":
-		*o = OperationAuthenticate
+	case "connect":
+		*o = OperationConnect
 	case "sync":
 		*o = OperationSync
-	case "publish":
-		*o = OperationPublish
-	case "subscribe":
-		*o = OperationSubscribe
-	case "unsubscribe":
-		*o = OperationUnsubscribe
+	case "push":
+		*o = OperationPush
 	default:
 		*o = OperationUnknown
 	}

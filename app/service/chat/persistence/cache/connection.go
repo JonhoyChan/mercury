@@ -9,8 +9,8 @@ import (
 
 const (
 	// keys
-	hashUserSessionServerKey = "hash/user/session/server/%v"
-	stringSessionServerKey   = "string/session/server/%v"
+	hashUserSessionServerKey = "userSessionServer:%s"
+	stringSessionServerKey   = "sessionServer:%s"
 
 	// scripts
 	addMappingLUA = `
@@ -28,7 +28,6 @@ const (
 // Mapping expiration time
 var mappingExpire = (30 * time.Minute) / time.Second
 
-// Add mapping
 // key: uid; field: sid; value: serverID
 func (c *Cache) AddMapping(uid, sid, serverID string) (err error) {
 	keys := []string{
@@ -40,7 +39,6 @@ func (c *Cache) AddMapping(uid, sid, serverID string) (err error) {
 	return
 }
 
-// Set the expiration time of the mapping-
 func (c *Cache) ExpireMapping(uid, sid string) (bool, error) {
 	var (
 		expired bool
@@ -74,4 +72,49 @@ func (c *Cache) DeleteMapping(uid, sid string) error {
 	}
 
 	return nil
+}
+
+func (c *Cache) GetSessions(uids ...string) (map[string]string, []string, error) {
+	sessions := make(map[string]string)
+	var onlineUIDs []string
+	for _, uid := range uids {
+		result, err := c.client.HGetAll(x.Sprintf(hashUserSessionServerKey, uid)).Result()
+		if err != nil {
+			return nil, nil, err
+		}
+
+		if len(result) > 0 {
+			onlineUIDs = append(onlineUIDs, uid)
+		}
+
+		for k, v := range result {
+			sessions[k] = v
+		}
+	}
+
+	return sessions, onlineUIDs, nil
+}
+
+func (c *Cache) GetServerIDs(sids ...string) ([]string, error) {
+	var servers []string
+	if len(sids) > 0 {
+		var keys []string
+		for _, sid := range sids {
+			keys = append(keys, x.Sprintf(hashUserSessionServerKey, sid))
+		}
+		result, err := c.client.MGet(keys...).Result()
+		if err != nil {
+			return nil, err
+		}
+
+		for _, v := range result {
+			var serverID string
+			if v != nil {
+				serverID = v.(string)
+			}
+			servers = append(servers, serverID)
+		}
+	}
+
+	return servers, nil
 }

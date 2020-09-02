@@ -1,4 +1,4 @@
-service_name: service.chat.job
+service_name: mercury.job
 version: latest
 register_ttl: 30s
 register_interval: 15s
@@ -20,11 +20,15 @@ registry:
 
 broker:
   stan:
-    enabled: true
-    addrs: "nats://192.168.13.119:4222"
-    clusterID: test-cluster
-    durableName: outgoing-durable
+    enable: true
+    addresses:
+      - nats://192.168.120.88:4222
+    cluster_id: test-cluster
+    durable_name: mercury-durable
 
-rpcServices:
+rpc_services:
   comet:
-    serviceName: gateway.chat.comet
+    service_name: mercury.comet
+
+topic:
+  push_message: mercury-push-message

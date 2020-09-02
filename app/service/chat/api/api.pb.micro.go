@@ -238,11 +238,13 @@ func NewChatEndpoints() []*api.Endpoint {
 
 type ChatService interface {
 	// Connect a connection
-	Connect(ctx context.Context, in *ConnectReq, opts ...client.CallOption) (*Empty, error)
+	Connect(ctx context.Context, in *ConnectReq, opts ...client.CallOption) (*ConnectResp, error)
 	// Disconnect a connection
 	Disconnect(ctx context.Context, in *DisconnectReq, opts ...client.CallOption) (*Empty, error)
 	// Heartbeat a connection
 	Heartbeat(ctx context.Context, in *HeartbeatReq, opts ...client.CallOption) (*Empty, error)
+	// Push message
+	PushMessage(ctx context.Context, in *PushMessageReq, opts ...client.CallOption) (*PushMessageResp, error)
 }
 
 type chatService struct {
@@ -257,9 +259,9 @@ func NewChatService(name string, c client.Client) ChatService {
 	}
 }
 
-func (c *chatService) Connect(ctx context.Context, in *ConnectReq, opts ...client.CallOption) (*Empty, error) {
+func (c *chatService) Connect(ctx context.Context, in *ConnectReq, opts ...client.CallOption) (*ConnectResp, error) {
 	req := c.c.NewRequest(c.name, "Chat.Connect", in)
-	out := new(Empty)
+	out := new(ConnectResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -287,22 +289,35 @@ func (c *chatService) Heartbeat(ctx context.Context, in *HeartbeatReq, opts ...c
 	return out, nil
 }
 
+func (c *chatService) PushMessage(ctx context.Context, in *PushMessageReq, opts ...client.CallOption) (*PushMessageResp, error) {
+	req := c.c.NewRequest(c.name, "Chat.PushMessage", in)
+	out := new(PushMessageResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Chat service
 
 type ChatHandler interface {
 	// Connect a connection
-	Connect(context.Context, *ConnectReq, *Empty) error
+	Connect(context.Context, *ConnectReq, *ConnectResp) error
 	// Disconnect a connection
 	Disconnect(context.Context, *DisconnectReq, *Empty) error
 	// Heartbeat a connection
 	Heartbeat(context.Context, *HeartbeatReq, *Empty) error
+	// Push message
+	PushMessage(context.Context, *PushMessageReq, *PushMessageResp) error
 }
 
 func RegisterChatHandler(s server.Server, hdlr ChatHandler, opts ...server.HandlerOption) error {
 	type chat interface {
-		Connect(ctx context.Context, in *ConnectReq, out *Empty) error
+		Connect(ctx context.Context, in *ConnectReq, out *ConnectResp) error
 		Disconnect(ctx context.Context, in *DisconnectReq, out *Empty) error
 		Heartbeat(ctx context.Context, in *HeartbeatReq, out *Empty) error
+		PushMessage(ctx context.Context, in *PushMessageReq, out *PushMessageResp) error
 	}
 	type Chat struct {
 		chat
@@ -315,7 +330,7 @@ type chatHandler struct {
 	ChatHandler
 }
 
-func (h *chatHandler) Connect(ctx context.Context, in *ConnectReq, out *Empty) error {
+func (h *chatHandler) Connect(ctx context.Context, in *ConnectReq, out *ConnectResp) error {
 	return h.ChatHandler.Connect(ctx, in, out)
 }
 
@@ -325,4 +340,8 @@ func (h *chatHandler) Disconnect(ctx context.Context, in *DisconnectReq, out *Em
 
 func (h *chatHandler) Heartbeat(ctx context.Context, in *HeartbeatReq, out *Empty) error {
 	return h.ChatHandler.Heartbeat(ctx, in, out)
+}
+
+func (h *chatHandler) PushMessage(ctx context.Context, in *PushMessageReq, out *PushMessageResp) error {
+	return h.ChatHandler.PushMessage(ctx, in, out)
 }

@@ -9,6 +9,10 @@ import (
 	"github.com/spf13/viper"
 )
 
+const (
+	viperKeyTopicPushMessage = "topic.push_message"
+)
+
 var v *viper.Viper
 
 type ViperProvider struct {
@@ -62,6 +66,15 @@ func (p *ViperProvider) Etcd() *config.EtcdConfig {
 	}
 }
 
+func (p *ViperProvider) Stan() *config.StanConfig {
+	return &config.StanConfig{
+		Enable:      v.GetBool(config.ViperKeyStanEnable),
+		Addresses:   v.GetStringSlice(config.ViperKeyStanAddresses),
+		ClusterID:   v.GetString(config.ViperKeyStanClusterID),
+		DurableName: v.GetString(config.ViperKeyStanDurableName),
+	}
+}
+
 func (p *ViperProvider) Database() *config.DatabaseConfig {
 	return &config.DatabaseConfig{
 		Driver:      v.GetString(config.ViperKeyDatabaseDriver),
@@ -110,4 +123,8 @@ func (p *ViperProvider) GeneratorUID() *config.GeneratorUIDConfig {
 		WorkID: v.GetInt64(config.ViperKeyGeneratorUidWorkID),
 		Key:    []byte(v.GetString(config.ViperKeyGeneratorUidKey)),
 	}
+}
+
+func (p *ViperProvider) PushMessageTopic() string {
+	return v.GetString(viperKeyTopicPushMessage)
 }

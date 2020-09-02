@@ -2,17 +2,18 @@ package grpc
 
 import (
 	"context"
+	"github.com/micro/go-micro/v2/broker"
 	"outgoing/app/service/chat/api"
 	"outgoing/app/service/chat/config"
 	"outgoing/app/service/chat/service"
 	"outgoing/x"
-	"outgoing/x/ecode"
 	"strings"
 
-	ratelimit "github.com/micro/go-plugins/wrapper/ratelimiter/uber/v2"
+	"github.com/micro/go-plugins/wrapper/ratelimiter/uber/v2"
 
 	"github.com/micro/go-micro/v2"
 	"github.com/micro/go-micro/v2/registry"
+	"github.com/micro/go-plugins/broker/stan/v2"
 	"github.com/micro/go-plugins/registry/etcdv3/v2"
 )
 
@@ -41,6 +42,31 @@ func Init(c config.Provider, srv *service.Service) {
 			op.Addrs = addresses
 		})
 		opts = append(opts, micro.Registry(etcdv3Registry))
+	}
+
+	if c.Stan().Enable {
+		// 创建一个新stanBroker实例
+		stanBroker := stan.NewBroker(
+			// 设置stan集群的地址
+			broker.Addrs(c.Stan().Addresses...),
+			stan.ConnectRetry(true),
+			// 设置stan集群标识
+			stan.ClusterID(c.Stan().ClusterID),
+			// 设置订阅者使用的永久名
+			stan.DurableName(c.Stan().DurableName),
+		)
+
+		if err := stanBroker.Init(); err != nil {
+			panic("unable to init stan broker:" + err.Error())
+		}
+
+		if err := stanBroker.Connect(); err != nil {
+			panic("unable to connect to stan broker:" + err.Error())
+		}
+
+		opts = append(opts, micro.Broker(stanBroker))
+
+		broker.DefaultBroker = stanBroker
 	}
 
 	opts = append(opts, micro.WrapHandler(
@@ -117,7 +143,7 @@ func (s *grpcServer) CreateUser(ctx context.Context, req *api.CreateUserReq, res
 }
 
 func (s *grpcServer) UpdateActivated(ctx context.Context, req *api.UpdateActivatedReq, resp *api.Empty) error {
-	err := s.s.UpdateActivated(s.s.SetContextUser(ctx, req.UID), req.Activated)
+	err := s.s.UpdateActivated(ctx, req.UID, req.Activated)
 	if err != nil {
 		return err
 	}
@@ -126,7 +152,7 @@ func (s *grpcServer) UpdateActivated(ctx context.Context, req *api.UpdateActivat
 }
 
 func (s *grpcServer) DeleteUser(ctx context.Context, req *api.DeleteUserReq, resp *api.Empty) error {
-	if err := s.s.DeleteUser(s.s.SetContextUser(ctx, req.UID)); err != nil {
+	if err := s.s.DeleteUser(ctx, req.UID); err != nil {
 		return err
 	}
 
@@ -134,7 +160,7 @@ func (s *grpcServer) DeleteUser(ctx context.Context, req *api.DeleteUserReq, res
 }
 
 func (s *grpcServer) GenerateUserToken(ctx context.Context, req *api.GenerateUserTokenReq, resp *api.TokenResp) error {
-	token, lifetime, err := s.s.GenerateUserToken(s.s.SetContextUser(ctx, req.UID))
+	token, lifetime, err := s.s.GenerateUserToken(ctx, req.UID)
 	if err != nil {
 		return err
 	}
@@ -144,25 +170,19 @@ func (s *grpcServer) GenerateUserToken(ctx context.Context, req *api.GenerateUse
 	return nil
 }
 
-func (s *grpcServer) Connect(ctx context.Context, req *api.ConnectReq, resp *api.Empty) error {
-	if req.UID == "" || req.SID == "" || req.ServerID == "" {
-		return ecode.ErrWrongParameter
-	}
-
-	err := s.s.Connect(ctx, req.UID, req.SID, req.ServerID)
+func (s *grpcServer) Connect(ctx context.Context, req *api.ConnectReq, resp *api.ConnectResp) error {
+	clientID, uid, err := s.s.Connect(ctx, req)
 	if err != nil {
 		return err
 	}
 
+	resp.ClientID = clientID
+	resp.UID = uid
 	return nil
 }
 
 func (s *grpcServer) Disconnect(ctx context.Context, req *api.DisconnectReq, resp *api.Empty) error {
-	if req.UID == "" || req.SID == "" {
-		return ecode.ErrWrongParameter
-	}
-
-	err := s.s.Disconnect(ctx, req.UID, req.SID)
+	err := s.s.Disconnect(ctx, req)
 	if err != nil {
 		return err
 	}
@@ -171,14 +191,21 @@ func (s *grpcServer) Disconnect(ctx context.Context, req *api.DisconnectReq, res
 }
 
 func (s *grpcServer) Heartbeat(ctx context.Context, req *api.HeartbeatReq, resp *api.Empty) error {
-	if req.UID == "" || req.SID == "" || req.ServerID == "" {
-		return ecode.ErrWrongParameter
-	}
-
-	err := s.s.Heartbeat(ctx, req.UID, req.SID, req.ServerID)
+	err := s.s.Heartbeat(ctx, req)
 	if err != nil {
 		return err
 	}
 
+	return nil
+}
+
+func (s *grpcServer) PushMessage(ctx context.Context, req *api.PushMessageReq, resp *api.PushMessageResp) error {
+	id, sequence, err := s.s.PushMessage(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	resp.MessageId = id
+	resp.Sequence = sequence
 	return nil
 }

@@ -61,8 +61,8 @@ func (p *clientPersister) GetClient(_ context.Context, id string) (*persistence.
 	return &persistence.Client{
 		ID:          id,
 		Name:        name,
-		TokenSecret: tokenSecret,
-		TokenExpire: tokenExpire,
+		TokenSecret: []byte(tokenSecret),
+		TokenExpire: time.Duration(tokenExpire) * time.Second,
 	}, nil
 }
 
@@ -74,7 +74,7 @@ func (p *clientPersister) Create(_ context.Context, in *persistence.ClientCreate
 	}
 
 	if isExist == 1 {
-		return ecode.ErrDataAlreadyExist
+		return ecode.ErrDataAlreadyExists
 	}
 
 	now := time.Now().Unix()

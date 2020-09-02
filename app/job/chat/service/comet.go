@@ -4,19 +4,19 @@ import (
 	"context"
 	"fmt"
 	"github.com/micro/go-micro/v2/client"
+	cApi "outgoing/app/gateway/chat/api"
+	"outgoing/x/log"
+	"sync/atomic"
 )
 
 type Comet struct {
-	ctx        context.Context
-	cancel     context.CancelFunc
-	serverID   string
-	callOption client.CallOption
-	//pushChan      []chan *api.PushMsgReq
-	//roomChan      []chan *api.BroadcastRoomReq
-	//broadcastChan chan *api.BroadcastReq
-	//pushChanNum   uint64
-	//roomChanNum   uint64
-	//routineSize   uint64
+	ctx         context.Context
+	cancel      context.CancelFunc
+	serverID    string
+	callOption  client.CallOption
+	pushChan    []chan *cApi.PushMessageReq
+	pushChanNum uint64
+	routineSize uint64
 }
 
 func NewComet(id, address string) (*Comet, error) {
@@ -24,20 +24,37 @@ func NewComet(id, address string) (*Comet, error) {
 		return nil, fmt.Errorf("invalid node address: %v", address)
 	}
 
-	comet := &Comet{
-		serverID:   id,
-		callOption: client.WithAddress(address),
-		//pushChan:      make([]chan *comet.PushMsgReq, c.RoutineSize),
-		//roomChan:      make([]chan *comet.BroadcastRoomReq, c.RoutineSize),
-		//broadcastChan: make(chan *comet.BroadcastReq, c.RoutineSize),
-		//routineSize:   uint64(c.RoutineSize),
+	routineSize := 32
+	c := &Comet{
+		serverID:    id,
+		callOption:  client.WithAddress(address),
+		pushChan:    make([]chan *cApi.PushMessageReq, routineSize),
+		routineSize: uint64(routineSize),
 	}
-	comet.ctx, comet.cancel = context.WithCancel(context.Background())
+	c.ctx, c.cancel = context.WithCancel(context.Background())
 
-	//for i := 0; i < c.RoutineSize; i++ {
-	//	cmt.pushChan[i] = make(chan *comet.PushMsgReq, c.RoutineChan)
-	//	cmt.roomChan[i] = make(chan *comet.BroadcastRoomReq, c.RoutineChan)
-	//	go cmt.process(cmt.pushChan[i], cmt.roomChan[i], cmt.broadcastChan)
-	//}
-	return comet, nil
+	for i := 0; i < routineSize; i++ {
+		c.pushChan[i] = make(chan *cApi.PushMessageReq, 1024)
+		go c.process(c.pushChan[i])
+	}
+	return c, nil
+}
+
+func (c *Comet) Push(req *cApi.PushMessageReq) {
+	idx := atomic.AddUint64(&c.pushChanNum, 1) % c.routineSize
+	c.pushChan[idx] <- req
+}
+
+func (c *Comet) process(pushChan chan *cApi.PushMessageReq) {
+	for {
+		select {
+		case req := <-pushChan:
+			_, err := grpcClient.PushMessage(c.ctx, &cApi.PushMessageReq{SIDs: req.SIDs, Data: req.Data}, c.callOption)
+			if err != nil {
+				log.Error("failed to push message", "error", err)
+			}
+		case <-c.ctx.Done():
+			return
+		}
+	}
 }
