@@ -17,7 +17,7 @@ const (
 func (t MessageType) MarshalText() ([]byte, error) {
 	switch t {
 	case MessageTypeSingle:
-		return []byte("user"), nil
+		return []byte("single"), nil
 	case MessageTypeGroup:
 		return []byte("group"), nil
 	default:
@@ -28,7 +28,7 @@ func (t MessageType) MarshalText() ([]byte, error) {
 // UnmarshalText parses MessageType from a string. the name of the MessageType.
 func (t *MessageType) UnmarshalText(b []byte) error {
 	switch strings.ToLower(string(b)) {
-	case "user":
+	case "single":
 		*t = MessageTypeSingle
 		return nil
 	case "group":
@@ -223,7 +223,7 @@ func (t ContentType) String() string {
 /* ---------------------------------------- Content ---------------------------------------- */
 
 type Message struct {
-	Id          int64       `json:"id,string"`
+	ID          int64       `json:"id,string"`
 	CreatedAt   int64       `json:"created_at,string"`
 	MessageType MessageType `json:"message_type"`
 	Sender      string      `json:"sender"`

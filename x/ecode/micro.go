@@ -2,7 +2,6 @@ package ecode
 
 import (
 	"context"
-	"outgoing/x/log"
 	"regexp"
 	"strconv"
 	"strings"
@@ -13,15 +12,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-var (
-	microErrorRegexp = regexp.MustCompile(`"code":(.*?),"detail":"(.*?)"`)
-	errInternal      = ErrInternalServer.ResetMessage("服务器内部错误")
-)
+var microErrorRegexp = regexp.MustCompile(`"code":(.*?),"detail":"(.*?)"`)
 
 func ParseMicroError(err error) error {
 	match := microErrorRegexp.FindStringSubmatch(err.Error())
 	if len(match) != 3 {
-		return errInternal
+		return err
 	}
 
 	microCode, _ := strconv.Atoi(match[1])
@@ -33,15 +29,15 @@ func ParseMicroError(err error) error {
 	sep := ": "
 	if strings.Contains(microError, sep) {
 		e := strings.Split(microError, sep)
-		code, err := strconv.Atoi(e[0])
-		if err != nil {
-			return errInternal
+		code, iErr := strconv.Atoi(e[0])
+		if iErr != nil {
+			return err
 		}
 
 		return Code{code: code, message: e[1]}
 	}
 
-	return errInternal
+	return err
 }
 
 func FormatMicroError(err error) error {
@@ -49,7 +45,8 @@ func FormatMicroError(err error) error {
 	if ok {
 		return Wrap(coder, strconv.Itoa(coder.Code()))
 	} else {
-		return Wrap(ErrInternalServer, "服务器内部错误")
+		coder = ErrInternalServer
+		return Wrap(coder.ResetMessage(err.Error()), strconv.Itoa(coder.Code()))
 	}
 }
 
@@ -88,7 +85,6 @@ func MicroCallFunc(fn client.CallFunc) client.CallFunc {
 	return func(ctx context.Context, node *registry.Node, req client.Request, rsp interface{}, opts client.CallOptions) error {
 		err := fn(ctx, node, req, rsp, opts)
 		if err != nil {
-			log.Error(err.Error())
 			return ParseMicroError(err)
 		}
 		return nil
