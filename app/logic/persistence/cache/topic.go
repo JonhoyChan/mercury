@@ -9,7 +9,7 @@ import (
 
 const (
 	topicSequenceKey     = "topicSequence:%v"
-	defaultTopicLifetime = 60 * time.Minute
+	defaultTopicLifetime = 3600 * time.Second
 )
 
 func (c *Cache) GetTopicSequence(topic string) (int64, error) {

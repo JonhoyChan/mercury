@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"github.com/micro/go-micro/v2/client"
-	cApi "outgoing/app/gateway/api"
+	cApi "outgoing/app/comet/api"
 	"outgoing/x/log"
 	"sync/atomic"
 )

@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"encoding/json"
-	chatApi "outgoing/app/service/api"
+	jsoniter "github.com/json-iterator/go"
+	chatApi "outgoing/app/logic/api"
 	"outgoing/x"
 	"outgoing/x/ecode"
 	"outgoing/x/log"
@@ -159,39 +159,47 @@ func (s *Session) writeLoop() {
 
 type Proto struct {
 	// operation for request
-	Operation types.Operation `json:"operation"`
+	Operation types.Operation `json:"operation" validate:"required"`
 	// binary body bytes
-	Body json.RawMessage `json:"body"`
+	Body jsoniter.RawMessage `json:"body" validate:"required"`
+}
+
+func (p *Proto) Validate() bool {
+	if err := validate.Struct(p); err != nil {
+		return false
+	}
+	return true
+}
+
+func (p *Proto) Marshal() ([]byte, error) {
+	return jsoniter.Marshal(p)
+}
+
+func (p *Proto) Unmarshal(data []byte) error {
+	return jsoniter.Unmarshal(data, p)
 }
 
 // Message received, convert bytes to ClientComMessage and dispatch
 func (s *Session) dispatchRaw(raw []byte) {
-	var proto Proto
-	if err := json.Unmarshal(raw, &proto); err != nil {
-		s.queueOut(&proto, ErrMalformed("", 0))
+	var p Proto
+	if err := p.Unmarshal(raw); err != nil {
+		s.queueOut(&p, ErrMalformed("", 0))
 		return
 	}
-	//proto, err = api.Deserialize(raw)
-	//if err != nil {
-	//	s.queueOut(proto, ErrMalformed("", 0))
-	//	return
-	//}
 
-	s.dispatch(&proto)
-}
+	if !p.Validate() {
+		s.queueOut(&p, ErrMalformed("", 0))
+		return
+	}
 
-type unmarshaler interface {
-	Unmarshal([]byte) error
+	s.dispatch(&p)
 }
 
 type handlerFunc func(message *ServerMessage) []byte
 
-func (s *Session) dispatch(p *Proto) {
-	s.lastAction = time.Now().UTC()
-	timestamp := s.lastAction.Unix()
-
+func (s *Session) route(o types.Operation) handlerFunc {
 	var handler handlerFunc
-	switch p.Operation {
+	switch o {
 	case types.OperationHandshake:
 		handler = s.handshake
 	case types.OperationHeartbeat:
@@ -200,9 +208,22 @@ func (s *Session) dispatch(p *Proto) {
 		handler = s.connect
 	case types.OperationPush:
 		handler = s.pushMessage
+	case types.OperationNotification:
+		handler = s.notification
 	default:
 		// Unknown operation
 		log.Debug("[Dispatch] unknown operation", log.Ctx{"sid": s.sid})
+		return nil
+	}
+	return handler
+}
+
+func (s *Session) dispatch(p *Proto) {
+	s.lastAction = time.Now().UTC()
+	timestamp := s.lastAction.Unix()
+
+	handler := s.route(p.Operation)
+	if handler == nil {
 		s.queueOut(p, ErrMalformed("", timestamp))
 		return
 	}
@@ -219,19 +240,10 @@ func (s *Session) dispatch(p *Proto) {
 }
 
 func (s *Session) handshake(message *ServerMessage) []byte {
-	if message.Data == nil {
-		log.Debug("[Handshake] proto body is nil", log.Ctx{"sid": s.sid})
-		return ErrMalformed("", message.Timestamp)
-	}
-
 	var req HandshakeRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
-		log.Warn("[Handshake] failed to unmarshal", log.Ctx{"error": err, "sid": s.sid})
+		log.Warn("[Handshake] failed to deserialize", log.Ctx{"error": err, "sid": s.sid})
 		return ErrMalformed("", message.Timestamp)
-	}
-
-	if req.Token == "" || req.UserAgent == "" {
-		return ErrAuthRequired(req.MID, message.Timestamp)
 	}
 
 	if s.version == 0 {
@@ -274,14 +286,9 @@ func (s *Session) handshake(message *ServerMessage) []byte {
 }
 
 func (s *Session) heartbeat(message *ServerMessage) []byte {
-	if message.Data == nil {
-		log.Debug("[Heartbeat] proto body is nil", "sid", s.sid)
-		return ErrMalformed("", message.Timestamp)
-	}
-
 	var req HeartbeatRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
-		log.Warn("[Heartbeat] failed to unmarshal", "sid", s.sid, "error", err)
+		log.Warn("[Heartbeat] failed to deserialize", "sid", s.sid, "error", err)
 		return ErrMalformed("", message.Timestamp)
 	}
 
@@ -298,19 +305,10 @@ func (s *Session) heartbeat(message *ServerMessage) []byte {
 }
 
 func (s *Session) connect(message *ServerMessage) []byte {
-	if message.Data == nil {
-		log.Debug("[Connect] proto body is nil", "sid", s.sid)
-		return ErrMalformed("", message.Timestamp)
-	}
-
 	var req ConnectRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
-		log.Warn("[Connect] failed to unmarshal", "sid", s.sid, "error", err)
+		log.Warn("[Connect] failed to deserialize", "sid", s.sid, "error", err)
 		return ErrMalformed("", message.Timestamp)
-	}
-
-	if req.Token == "" {
-		return ErrAuthRequired(req.MID, message.Timestamp)
 	}
 
 	clientID, uid, err := s.srv.connect(s.ctx, req.Token, s.sid, s.serverID)
@@ -330,24 +328,14 @@ func (s *Session) connect(message *ServerMessage) []byte {
 }
 
 func (s *Session) pushMessage(message *ServerMessage) []byte {
-	if message.Data == nil {
-		log.Debug("[PushMessage] proto body is nil", "sid", s.sid)
-		return ErrMalformed("", message.Timestamp)
-	}
-
 	var req PushMessageRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
-		log.Warn("[Connect] failed to unmarshal", "sid", s.sid, "error", err)
+		log.Warn("[PushMessage] failed to deserialize", "sid", s.sid, "error", err)
 		return ErrMalformed("", message.Timestamp)
 	}
 
 	if s.id.IsZero() {
 		return ErrAuthRequired(req.MID, message.Timestamp)
-	}
-
-	body, err := req.GetBody()
-	if err != nil {
-		return ErrMalformed(req.MID, message.Timestamp)
 	}
 
 	messageID, sequence, err := s.srv.pushMessage(s.ctx, &chatApi.PushMessageReq{
@@ -357,11 +345,11 @@ func (s *Session) pushMessage(message *ServerMessage) []byte {
 		Sender:      s.id.UID(),
 		Receiver:    req.Receiver,
 		ContentType: chatApi.ContentType(req.ContentType),
-		Body:        body,
+		Body:        req.Body,
 		Mentions:    req.Mentions,
 	})
 	if err != nil {
-		log.Error("[Connect] failed to authenticate token", "sid", s.sid, "error", err)
+		log.Error("[PushMessage] failed to push message", "sid", s.sid, "error", err)
 		return ErrInternalServer(req.MID, message.Timestamp, err.Error())
 	}
 
@@ -372,6 +360,32 @@ func (s *Session) pushMessage(message *ServerMessage) []byte {
 	return NoErr(req.MID, message.Timestamp, resp)
 }
 
+func (s *Session) notification(message *ServerMessage) []byte {
+	var req NotificationRequest
+	if err := s.deserialize(&req, message.Data); err != nil {
+		log.Warn("[Notification] failed to deserialize", "sid", s.sid, "error", err)
+		return ErrMalformed("", message.Timestamp)
+	}
+
+	if s.id.IsZero() {
+		return ErrAuthRequired(req.MID, message.Timestamp)
+	}
+
+	var err error
+	switch req.What {
+	case types.WhatTypeKeypress:
+		err = s.srv.keypress(s.ctx, s.id.UID(), req.Topic)
+	case types.WhatTypeRead:
+		err = s.srv.readMessage(s.ctx, s.id.UID(), req.Topic, req.Sequence)
+	}
+	if err != nil {
+		log.Error("[Notification] failed to send notification", "sid", s.sid, "error", err)
+		return ErrInternalServer(req.MID, message.Timestamp, err.Error())
+	}
+
+	return NoErr(req.MID, message.Timestamp, nil)
+}
+
 func (s *Session) serialize(p *Proto, body []byte) []byte {
 	if p == nil {
 		p = &Proto{
@@ -379,8 +393,7 @@ func (s *Session) serialize(p *Proto, body []byte) []byte {
 		}
 	}
 	p.Body = body
-	//data, _ := api.Serialize(p)
-	data, err := json.Marshal(&p)
+	data, err := p.Marshal()
 	if err != nil {
 		log.Error("marshal error", "error", err)
 		return nil
@@ -388,11 +401,17 @@ func (s *Session) serialize(p *Proto, body []byte) []byte {
 	return data
 }
 
-func (s *Session) deserialize(v unmarshaler, body []byte) error {
+func (s *Session) deserialize(v requester, body []byte) error {
 	if v == nil {
-		return ecode.NewError("unmarshaler can not be nil")
+		return ecode.NewError("requester can not be nil pointer")
 	}
-	return v.Unmarshal(body)
+	if err := v.Unmarshal(body); err != nil {
+		return err
+	}
+	if !v.Validate() {
+		return ecode.NewError("failed to validate")
+	}
+	return nil
 }
 
 // queueOut attempts to send a ServerComMessage to a session; if the send buffer is full,

@@ -41,5 +41,5 @@ type AuthenticatorProvider interface {
 }
 
 type GeneratorProvider interface {
-	GeneratorUID() *GeneratorUIDConfig
+	GeneratorID() *GeneratorIDConfig
 }

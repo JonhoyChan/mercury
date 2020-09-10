@@ -43,7 +43,7 @@ type HasherBCryptConfig struct {
 	Cost int
 }
 
-type GeneratorUIDConfig struct {
+type GeneratorIDConfig struct {
 	WorkID int64
 	Key    []byte
 }

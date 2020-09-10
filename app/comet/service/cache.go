@@ -1,7 +1,7 @@
 package service
 
 import (
-	"outgoing/app/gateway/stats"
+	"outgoing/app/comet/stats"
 	"sync"
 )
 

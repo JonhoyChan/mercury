@@ -2,7 +2,7 @@ package sql
 
 import (
 	"context"
-	"outgoing/app/service/persistence"
+	"outgoing/app/logic/persistence"
 	"outgoing/x"
 	"outgoing/x/database/sqlx"
 	"outgoing/x/ecode"

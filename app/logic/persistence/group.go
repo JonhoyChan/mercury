@@ -14,3 +14,12 @@ type GroupMember struct {
 	GroupID  int64
 	UserID   int64
 }
+
+type Group struct {
+	CreatedAt    int64
+	Name         string
+	GID          string
+	Introduction string
+	Owner        int64
+	MemberCount  int64
+}

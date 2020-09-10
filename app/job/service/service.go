@@ -5,7 +5,7 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/client/grpc"
 	"github.com/micro/go-micro/v2/registry"
-	cApi "outgoing/app/gateway/api"
+	cApi "outgoing/app/comet/api"
 	"outgoing/app/job/config"
 	"outgoing/x/ecode"
 	"outgoing/x/log"

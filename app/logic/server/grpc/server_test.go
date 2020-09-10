@@ -5,7 +5,7 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/client/grpc"
 	"github.com/stretchr/testify/require"
-	"outgoing/app/service/api"
+	"outgoing/app/logic/api"
 	"outgoing/x/ecode"
 	"testing"
 	"time"
@@ -104,7 +104,7 @@ func TestGrpcServer_User(t *testing.T) {
 	t.Run("Generate user token", func(t *testing.T) {
 		resp, err := apiAdminClient.GenerateUserToken(ctx, &api.GenerateUserTokenReq{
 			Token: "7b2245787069726573223a313630303136353338362c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227d1c249a99733d0ae591455211e62a4fa9843018d84ff583785c61a7a396343995",
-			UID:   "uidOwbRDvaLyaw",
+			UID:   "uid7KA8fY5Jb3A",
 		})
 		require.Nil(t, err)
 
@@ -132,9 +132,19 @@ func TestGrpcServer_User(t *testing.T) {
 		_, err := apiAdminClient.AddFriend(ctx, &api.AddFriendReq{
 			Token:     "7b2245787069726573223a313630303136353338362c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227d1c249a99733d0ae591455211e62a4fa9843018d84ff583785c61a7a396343995",
 			UID:       "uid7KA8fY5Jb3A",
-			FriendUID: "uiduN_f_2oWkUQ",
+			FriendUID: "uidOwbRDvaLyaw",
 		})
 		require.Nil(t, err)
+	})
+
+	t.Run("Get friends", func(t *testing.T) {
+		resp, err := apiAdminClient.GetFriends(ctx, &api.GetFriendsReq{
+			Token: "7b2245787069726573223a313630303136353338362c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227d1c249a99733d0ae591455211e62a4fa9843018d84ff583785c61a7a396343995",
+			UID:   "uid7KA8fY5Jb3A",
+		})
+		require.Nil(t, err)
+
+		t.Logf("friends: %+v", resp.Friends)
 	})
 
 	t.Run("Delete user", func(t *testing.T) {
@@ -158,22 +168,53 @@ func TestGrpcServer_Group(t *testing.T) {
 		})
 		require.Nil(t, err)
 
-		t.Logf("gid: %s", resp.GID)
+		t.Logf("group: %v", resp.Group)
 		//gid = resp.GID
+	})
+
+	t.Run("Get groups", func(t *testing.T) {
+		resp, err := apiAdminClient.GetGroups(ctx, &api.GetGroupsReq{
+			Token: "7b2245787069726573223a313630303136353338362c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227d1c249a99733d0ae591455211e62a4fa9843018d84ff583785c61a7a396343995",
+			UID:   "uid7KA8fY5Jb3A",
+		})
+		require.Nil(t, err)
+
+		t.Logf("groups: %+v", resp.Groups)
 	})
 
 	t.Run("Add member", func(t *testing.T) {
 		_, err := apiAdminClient.AddMember(ctx, &api.AddMemberReq{
 			Token: "7b2245787069726573223a313630303136353338362c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227d1c249a99733d0ae591455211e62a4fa9843018d84ff583785c61a7a396343995",
-			GID:   "gidqFRCSA2eLeI",
+			GID:   "gid4Fl1QvXZpM4",
 			UID:   "uidOwbRDvaLyaw",
 		})
 		require.Nil(t, err)
 	})
+
+	t.Run("Get members", func(t *testing.T) {
+		resp, err := apiAdminClient.GetMembers(ctx, &api.GetMembersReq{
+			Token: "7b2245787069726573223a313630303136353338362c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227d1c249a99733d0ae591455211e62a4fa9843018d84ff583785c61a7a396343995",
+			GID:   "gid4Fl1QvXZpM4",
+		})
+		require.Nil(t, err)
+
+		t.Logf("members: %+v", resp.Members)
+	})
+}
+
+func TestGrpcServer_PullMessage(t *testing.T) {
+	t.Run("pull message", func(t *testing.T) {
+		resp, err := apiClient.PullMessage(ctx, &api.PullMessageReq{
+			UID: "uid7KA8fY5Jb3A",
+		})
+		require.Nil(t, err)
+
+		t.Logf("messages: %+v", resp.TopicMessages)
+	})
 }
 
 func TestGrpcServer_PushMessage(t *testing.T) {
-	t.Run("send message", func(t *testing.T) {
+	t.Run("push message", func(t *testing.T) {
 		resp, err := apiClient.PushMessage(ctx, &api.PushMessageReq{
 			ClientID:    "c4ff4ca9-6f2f-4fdb-8481-8460c3ace3b0",
 			MessageType: api.MessageTypeSingle,

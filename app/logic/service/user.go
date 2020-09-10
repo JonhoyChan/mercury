@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"outgoing/app/service/api"
-	"outgoing/app/service/persistence"
+	"outgoing/app/logic/api"
+	"outgoing/app/logic/persistence"
 	"outgoing/x/types"
 )
 
@@ -101,4 +101,22 @@ func (s *Service) GenerateUserToken(ctx context.Context, uid string) (string, st
 	go s.cache.SetClientID(token, clientID, client.TokenExpire)
 
 	return token, lifetime, nil
+}
+
+func (s *Service) GetFriends(ctx context.Context, uid string) ([]string, error) {
+	s.log.Info("[GetFriends] request is received")
+
+	clientID := s.MustGetContextClient(ctx)
+	friendIDs, err := s.persister.User().GetFriends(ctx, s.DecodeID(types.ParseUID(uid)))
+	if err != nil {
+		s.log.Error("[GetFriends] failed to get friends", "client_id", clientID, "uid", uid, "error", err)
+		return nil, err
+	}
+
+	var result []string
+	for i := 0; i < len(friendIDs); i++ {
+		result = append(result, s.EncodeID(friendIDs[i]).UID())
+	}
+
+	return result, nil
 }

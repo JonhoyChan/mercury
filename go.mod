@@ -12,6 +12,7 @@ require (
 	github.com/fsnotify/fsnotify v1.4.9 // indirect
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.6.3
+	github.com/go-playground/validator/v10 v10.3.0
 	github.com/go-redis/redis/v7 v7.4.0
 	github.com/go-stack/stack v1.8.0
 	github.com/gogo/protobuf v1.3.1
@@ -43,5 +44,6 @@ require (
 	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/tools v0.0.0-20200902012652-d1954cc86c82 // indirect
 	google.golang.org/genproto v0.0.0-20200122232147-0452cf42e150 // indirect
+	gopkg.in/go-playground/validator.v9 v9.31.0
 	honnef.co/go/tools v0.0.1-2020.1.5 // indirect
 )

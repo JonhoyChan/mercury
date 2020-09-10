@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"encoding/json"
-	"outgoing/app/service/api"
-	"outgoing/app/service/persistence"
+	jsoniter "github.com/json-iterator/go"
+	"outgoing/app/logic/api"
+	"outgoing/app/logic/persistence"
 	"outgoing/x"
 	"outgoing/x/database/redis"
 	"outgoing/x/ecode"
@@ -51,19 +51,21 @@ func (s *Service) PushMessage(ctx context.Context, req *api.PushMessageReq) (int
 		receiver = types.ParseUID(req.Receiver)
 		check, _ = s.persister.User().CheckActivated(ctx, req.ClientID, req.Receiver)
 		if !check {
-			s.log.Error("[SendMessage] receiver not activated", "uid", req.Receiver)
+			s.log.Error("[PushMessage] receiver not activated", "uid", req.Receiver)
 			return 0, 0, ecode.ErrUserNotActivated
 		}
 
 		uids = append(uids, req.Receiver)
 		topic = sender.P2PName(receiver)
+
+		go s.cache.SetUsersTopic(uids, topic)
 	case api.MessageTypeGroup:
 		gid := types.ParseGID(req.Receiver)
 		receiver = gid
 		// Get a list of all member IDs in the group
-		members, err := s.persister.Group().Members(ctx, req.ClientID, s.DecodeID(gid))
+		members, err := s.persister.Group().GetMembers(ctx, req.ClientID, s.DecodeID(gid))
 		if err != nil {
-			s.log.Error("[SendMessage] failed to get group members", "gid", req.Receiver, "error", err)
+			s.log.Error("[PushMessage] failed to get group members", "gid", req.Receiver, "error", err)
 			return 0, 0, err
 		}
 
@@ -96,14 +98,15 @@ func (s *Service) PushMessage(ctx context.Context, req *api.PushMessageReq) (int
 	}
 	add := func() error {
 		var err error
+		// Get the next sequence of the topic
 		message.Sequence, err = s.nextSequence(ctx, topic)
 		if err != nil {
-			s.log.Error("[SendMessage] failed to get sequence", "topic", topic, "error", err)
+			s.log.Error("[PushMessage] failed to get sequence", "topic", topic, "error", err)
 			return err
 		}
 
 		if err = s.persister.Message().Add(ctx, message); err != nil {
-			s.log.Error("[SendMessage] failed to add message", "sequence", message.Sequence, "topic", topic, "error", err)
+			s.log.Error("[PushMessage] failed to add message", "sequence", message.Sequence, "topic", topic, "error", err)
 			return err
 		}
 
@@ -133,44 +136,23 @@ func (s *Service) PushMessage(ctx context.Context, req *api.PushMessageReq) (int
 					Body:        req.Body,
 					Mentions:    req.Mentions,
 				}
-
-				sessions, _, err := s.cache.GetSessions(uids...)
-				if err != nil {
-					s.log.Error("[SendMessage] failed to get sessions", "error", err)
-					return 0, 0, err
+				go s.send(m, req.SID, uids...)
+				if len(req.Mentions) > 0 {
+					n := &types.Notification{
+						Topic: topic,
+						What:  types.WhatTypeMentioned,
+					}
+					go s.send(n, "", req.Mentions...)
 				}
-
-				if len(sessions) > 0 {
-					servers := make(map[string][]string)
-					for sid, serverID := range sessions {
-						if sid == "" || serverID == "" {
-							s.log.Warn("[SendMessage] sid or serverID is empty", "sid", sid, "serverID", serverID, "error", err)
-							continue
-						}
-						if sid != req.SID {
-							servers[serverID] = append(servers[serverID], sid)
-						}
-					}
-
-					data, err := json.Marshal(m)
-					if err != nil {
-						return 0, 0, err
-					}
-					for serverID, sids := range servers {
-						if err := s.invoke(s.config.PushMessageTopic(), &api.PushMessage{
-							ServerID: serverID,
-							SIDs:     sids,
-							Data:     data,
-						}); err != nil {
-							s.log.Warn("[SendMessage] failed to invoke", "serverID", serverID, "error", err)
-						}
-					}
-				}
+				go s.cache.SetUserTopicLastSequence(sender.UID(), message.Topic, message.Sequence)
 
 				go s.InvokeMessageListener(req.ClientID, m)
 				return message.ID, message.Sequence, nil
 			}
 
+			// If the error is ErrDataAlreadyExists, it means that the sequence already exists,
+			// try to get the next sequence again,
+			// otherwise return this error
 			if !ecode.EqualError(ecode.ErrDataAlreadyExists, err) {
 				return 0, 0, err
 			}
@@ -178,4 +160,148 @@ func (s *Service) PushMessage(ctx context.Context, req *api.PushMessageReq) (int
 	}
 
 	return 0, 0, ecode.ErrInternalServer
+}
+
+func (s *Service) PullMessage(ctx context.Context, req *api.PullMessageReq) ([]*api.TopicMessages, error) {
+	topicsLastSequence, err := s.cache.GetUserTopicsLastSequence(req.UID)
+	if err != nil {
+		return nil, err
+	}
+
+	if len(topicsLastSequence) == 0 {
+		topics, err := s.cache.GetUserTopics(req.UID)
+		if err != nil {
+			return nil, err
+		}
+
+		if len(topics) > 0 {
+			topicsLastSequence = make(map[string]int64)
+			for _, topic := range topics {
+				topicsLastSequence[topic] = 0
+			}
+		}
+	}
+
+	var topicMessages []*api.TopicMessages
+	for topic, sequence := range topicsLastSequence {
+		messages, count, err := s.persister.Message().GetTopicMessagesByLastSequence(ctx, topic, sequence)
+		if err != nil {
+			return nil, err
+		}
+
+		tm := &api.TopicMessages{
+			Topic: topic,
+			Count: count,
+		}
+
+		for _, message := range messages {
+			mentions := make([]string, 0)
+			for _, mention := range message.Mentions {
+				mentions = append(mentions, s.EncodeID(mention).UID())
+			}
+			tm.Messages = append(tm.Messages, &api.Message{
+				ID:          message.ID,
+				CreatedAt:   message.CreatedAt,
+				MessageType: message.MessageType.String(),
+				Sender:      s.EncodeID(message.Sender).UID(),
+				Receiver:    s.EncodeID(message.Receiver).UID(),
+				Topic:       message.Topic,
+				Sequence:    message.Sequence,
+				ContentType: message.ContentType.String(),
+				Body:        message.Body,
+				Mentions:    mentions,
+			})
+		}
+
+		topicMessages = append(topicMessages, tm)
+	}
+
+	return topicMessages, nil
+}
+
+func (s *Service) ReadMessage(ctx context.Context, req *api.ReadMessageReq) error {
+	message, err := s.persister.Message().GetTopicMessageBySequence(ctx, req.Topic, req.Sequence)
+	if err != nil {
+		return err
+	}
+
+	err = s.cache.SetUserTopicLastSequence(req.UID, message.Topic, message.Sequence)
+	if err != nil {
+		return err
+	}
+
+	if s.EncodeID(message.Receiver).Compare(types.ParseUID(req.UID)) == 0 {
+		n := &types.Notification{
+			Topic:     message.Topic,
+			What:      types.WhatTypeRead,
+			Sequence:  message.Sequence,
+			MessageID: message.ID,
+		}
+		sender := s.EncodeID(message.Sender).UID()
+		go s.send(n, "", sender)
+	}
+
+	return nil
+}
+
+func (s *Service) Keypress(ctx context.Context, req *api.KeypressReq) error {
+	from := types.ParseUID(req.UID)
+
+	u1, u2, err := types.ParseP2P(req.Topic)
+	if err != nil {
+		return err
+	}
+
+	var to types.ID
+	if u1.Compare(from) == 0 {
+		to = u2
+	} else if u2.Compare(from) == 0 {
+		to = u1
+	}
+
+	n := &types.Notification{
+		Topic: req.Topic,
+		What:  types.WhatTypeKeypress,
+	}
+	go s.send(n, "", to.UID())
+
+	return nil
+}
+
+func (s *Service) send(v interface{}, skipSID string, uids ...string) {
+	sessions, _, err := s.cache.GetSessions(uids...)
+	if err != nil {
+		s.log.Warn("[Send] failed to get sessions", "error", err)
+		return
+	}
+
+	if len(sessions) > 0 {
+		servers := make(map[string][]string)
+		for sid, serverID := range sessions {
+			if sid == "" || serverID == "" {
+				s.log.Warn("[Send] sid or serverID is empty", "sid", sid, "serverID", serverID, "error", err)
+				continue
+			}
+			if sid != skipSID {
+				servers[serverID] = append(servers[serverID], sid)
+			}
+		}
+
+		data, err := jsoniter.Marshal(v)
+		if err != nil {
+			s.log.Warn("[Send] failed to marshal", "error", err)
+			return
+		}
+
+		topic := s.config.PushMessageTopic()
+		for serverID, sids := range servers {
+			if err := s.invoke(topic, &api.PushMessage{
+				ServerID: serverID,
+				SIDs:     sids,
+				Data:     data,
+			}); err != nil {
+				s.log.Warn("[Send] failed to invoke", "serverID", serverID, "error", err)
+			}
+		}
+	}
 }

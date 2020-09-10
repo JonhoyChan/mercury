@@ -47,9 +47,9 @@ const (
 	// hasher.
 	ViperKeyHasherBCryptCost = "hasher.bcrypt.cost"
 
-	// generator uid
-	ViperKeyGeneratorUidWorkID = "generator.uid.work_id"
-	ViperKeyGeneratorUidKey    = "generator.uid.key"
+	// generator id
+	ViperKeyGeneratorIDWorkID = "generator.id.work_id"
+	ViperKeyGeneratorIDKey    = "generator.id.key"
 
 	// authenticator token
 	ViperKeyAuthenticatorTokenEnable = "authenticator.token.enable"

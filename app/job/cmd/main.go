@@ -23,7 +23,7 @@ func init() {
 	// Absolute paths are left unchanged.
 	rootPath, _ := filepath.Split(executable)
 
-	path := x.ToAbsolutePath(rootPath, "chat-job.yml")
+	path := x.ToAbsolutePath(rootPath, "mercury-job.yml")
 
 	flag.StringVar(&configFile, "config", path, "Path to config file.")
 }

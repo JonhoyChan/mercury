@@ -10,202 +10,202 @@ import (
 	"strings"
 )
 
-// Uid is a database-specific record id, suitable to be used as a primary key.
-type Uid uint64
+// ID is a database-specific record id, suitable to be used as a primary key.
+type ID uint64
 
-// ZeroUid is a constant representing uninitialized Uid.
-const ZeroUid Uid = 0
+// ZeroID is a constant representing uninitialized ID.
+const ZeroID ID = 0
 
 // NullValue is a Unicode DEL character which indicated that the value is being deleted.
 const NullValue = "\u2421"
 
-// Lengths of various Uid representations
+// Lengths of various ID representations
 const (
 	uidBase64Unpadded = 11
 	p2pBase64Unpadded = 22
 )
 
-// Default Uid prefix
+// Default ID prefix
 const (
 	PrefixUID = "uid"
 	PrefixGID = "gid"
 )
 
-// IsZero checks if Uid is uninitialized.
-func (uid Uid) IsZero() bool {
-	return uid == ZeroUid
+// IsZero checks if ID is uninitialized.
+func (id ID) IsZero() bool {
+	return id == ZeroID
 }
 
 // Compare returns 0 if uid is equal to u2, 1 if u2 is greater than uid, -1 if u2 is smaller.
-func (uid Uid) Compare(u2 Uid) int {
-	if uid < u2 {
+func (id ID) Compare(u2 ID) int {
+	if id < u2 {
 		return -1
-	} else if uid > u2 {
+	} else if id > u2 {
 		return 1
 	}
 	return 0
 }
 
-// MarshalBinary converts Uid to byte slice.
-func (uid Uid) MarshalBinary() ([]byte, error) {
+// MarshalBinary converts ID to byte slice.
+func (id ID) MarshalBinary() ([]byte, error) {
 	dst := make([]byte, 8)
-	binary.LittleEndian.PutUint64(dst, uint64(uid))
+	binary.LittleEndian.PutUint64(dst, uint64(id))
 	return dst, nil
 }
 
-// UnmarshalBinary reads Uid from byte slice.
-func (uid *Uid) UnmarshalBinary(b []byte) error {
+// UnmarshalBinary reads ID from byte slice.
+func (id *ID) UnmarshalBinary(b []byte) error {
 	if len(b) < 8 {
-		return errors.New("Uid.UnmarshalBinary: invalid length")
+		return errors.New("ID.UnmarshalBinary: invalid length")
 	}
-	*uid = Uid(binary.LittleEndian.Uint64(b))
+	*id = ID(binary.LittleEndian.Uint64(b))
 	return nil
 }
 
-// UnmarshalText reads Uid from string represented as byte slice.
-func (uid *Uid) UnmarshalText(src []byte) error {
+// UnmarshalText reads ID from string represented as byte slice.
+func (id *ID) UnmarshalText(src []byte) error {
 	if len(src) != uidBase64Unpadded {
-		return errors.New("Uid.UnmarshalText: invalid length")
+		return errors.New("ID.UnmarshalText: invalid length")
 	}
 	dec := make([]byte, base64.URLEncoding.WithPadding(base64.NoPadding).DecodedLen(uidBase64Unpadded))
 	count, err := base64.URLEncoding.WithPadding(base64.NoPadding).Decode(dec, src)
 	if count < 8 {
 		if err != nil {
-			return errors.New("Uid.UnmarshalText: failed to decode " + err.Error())
+			return errors.New("ID.UnmarshalText: failed to decode " + err.Error())
 		}
-		return errors.New("Uid.UnmarshalText: failed to decode")
+		return errors.New("ID.UnmarshalText: failed to decode")
 	}
-	*uid = Uid(binary.LittleEndian.Uint64(dec))
+	*id = ID(binary.LittleEndian.Uint64(dec))
 	return nil
 }
 
-// MarshalText converts Uid to string represented as byte slice.
-func (uid *Uid) MarshalText() ([]byte, error) {
-	if *uid == ZeroUid {
+// MarshalText converts ID to string represented as byte slice.
+func (id *ID) MarshalText() ([]byte, error) {
+	if *id == ZeroID {
 		return []byte{}, nil
 	}
 	src := make([]byte, 8)
 	dst := make([]byte, base64.URLEncoding.WithPadding(base64.NoPadding).EncodedLen(8))
-	binary.LittleEndian.PutUint64(src, uint64(*uid))
+	binary.LittleEndian.PutUint64(src, uint64(*id))
 	base64.URLEncoding.WithPadding(base64.NoPadding).Encode(dst, src)
 	return dst, nil
 }
 
-// MarshalJSON converts Uid to double quoted ("ajjj") string.
-func (uid *Uid) MarshalJSON() ([]byte, error) {
-	dst, _ := uid.MarshalText()
+// MarshalJSON converts ID to double quoted ("ajjj") string.
+func (id *ID) MarshalJSON() ([]byte, error) {
+	dst, _ := id.MarshalText()
 	return append(append([]byte{'"'}, dst...), '"'), nil
 }
 
-// UnmarshalJSON reads Uid from a double quoted string.
-func (uid *Uid) UnmarshalJSON(b []byte) error {
+// UnmarshalJSON reads ID from a double quoted string.
+func (id *ID) UnmarshalJSON(b []byte) error {
 	size := len(b)
 	if size != (uidBase64Unpadded + 2) {
-		return errors.New("Uid.UnmarshalJSON: invalid length")
+		return errors.New("ID.UnmarshalJSON: invalid length")
 	} else if b[0] != '"' || b[size-1] != '"' {
-		return errors.New("Uid.UnmarshalJSON: unrecognized")
+		return errors.New("ID.UnmarshalJSON: unrecognized")
 	}
-	return uid.UnmarshalText(b[1 : size-1])
+	return id.UnmarshalText(b[1 : size-1])
 }
 
-// String converts Uid to base64 string.
-func (uid Uid) String() string {
-	buf, _ := uid.MarshalText()
+// String converts ID to base64 string.
+func (id ID) String() string {
+	buf, _ := id.MarshalText()
 	return string(buf)
 }
 
-// String32 converts Uid to lowercase base32 string (suitable for file names on Windows).
-func (uid Uid) String32() string {
-	data, _ := uid.MarshalBinary()
+// String32 converts ID to lowercase base32 string (suitable for file names on Windows).
+func (id ID) String32() string {
+	data, _ := id.MarshalBinary()
 	return strings.ToLower(base32.StdEncoding.WithPadding(base32.NoPadding).EncodeToString(data))
 }
 
-// ParseUid parses string NOT prefixed with anything
-func ParseUid(s string) Uid {
-	var uid Uid
-	_ = uid.UnmarshalText([]byte(s))
-	return uid
+// ParseID parses string NOT prefixed with anything
+func ParseID(s string) ID {
+	var id ID
+	_ = id.UnmarshalText([]byte(s))
+	return id
 }
 
-// ParseUid32 parses base32-encoded string into Uid
-func ParseUid32(s string) Uid {
-	var uid Uid
+// ParseID32 parses base32-encoded string into ID
+func ParseID32(s string) ID {
+	var id ID
 	if data, err := base32.StdEncoding.WithPadding(base32.NoPadding).DecodeString(s); err == nil {
-		_ = uid.UnmarshalBinary(data)
+		_ = id.UnmarshalBinary(data)
 	}
-	return uid
+	return id
 }
 
-// PrefixId converts Uid to string prefixed with the given prefix.
-func (uid Uid) PrefixId(prefix string) string {
-	if uid.IsZero() {
+// PrefixId converts ID to string prefixed with the given prefix.
+func (id ID) PrefixId(prefix string) string {
+	if id.IsZero() {
 		return ""
 	}
-	return prefix + uid.String()
+	return prefix + id.String()
 }
 
-// UserId converts Uid to string prefixed with 'uid'
-func (uid Uid) UID() string {
-	return uid.PrefixId(PrefixUID)
+// UserId converts ID to string prefixed with 'uid'
+func (id ID) UID() string {
+	return id.PrefixId(PrefixUID)
 }
 
-// UserId converts Uid to string prefixed with 'gid'
-func (uid Uid) GID() string {
-	return uid.PrefixId(PrefixGID)
+// UserId converts ID to string prefixed with 'gid'
+func (id ID) GID() string {
+	return id.PrefixId(PrefixGID)
 }
 
-// ParseUidWithPrefix parses Uid with the given prefix
-func ParseUidWithPrefix(s, prefix string) Uid {
-	var uid Uid
+// ParseIDWithPrefix parses ID with the given prefix
+func ParseIDWithPrefix(s, prefix string) ID {
+	var id ID
 	if strings.HasPrefix(s, prefix) {
-		_ = (&uid).UnmarshalText([]byte(s)[3:])
+		_ = (&id).UnmarshalText([]byte(s)[3:])
 	}
-	return uid
+	return id
 }
 
-// ParseUID parses Uid with 'uid'
-func ParseUID(s string) Uid {
-	return ParseUidWithPrefix(s, PrefixUID)
+// ParseUID parses ID with 'uid'
+func ParseUID(s string) ID {
+	return ParseIDWithPrefix(s, PrefixUID)
 }
 
-// ParseGID parses Uid with 'gid'
-func ParseGID(s string) Uid {
-	return ParseUidWithPrefix(s, PrefixGID)
+// ParseGID parses ID with 'gid'
+func ParseGID(s string) ID {
+	return ParseIDWithPrefix(s, PrefixGID)
 }
 
-// UidSlice is a slice of Uids sorted in ascending order.
-type UidSlice []Uid
+// IDSlice is a slice of IDs sorted in ascending order.
+type IDSlice []ID
 
-func (us UidSlice) find(uid Uid) (int, bool) {
+func (us IDSlice) find(id ID) (int, bool) {
 	l := len(us)
-	if l == 0 || us[0] > uid {
+	if l == 0 || us[0] > id {
 		return 0, false
 	}
-	if uid > us[l-1] {
+	if id > us[l-1] {
 		return l, false
 	}
 	idx := sort.Search(l, func(i int) bool {
-		return uid <= us[i]
+		return id <= us[i]
 	})
-	return idx, idx < l && us[idx] == uid
+	return idx, idx < l && us[idx] == id
 }
 
-// Add uid to UidSlice keeping it sorted. Duplicates are ignored.
-func (us *UidSlice) Add(uid Uid) bool {
-	idx, found := us.find(uid)
+// Add uid to IDSlice keeping it sorted. Duplicates are ignored.
+func (us *IDSlice) Add(id ID) bool {
+	idx, found := us.find(id)
 	if found {
 		return false
 	}
 	// Inserting without creating a temporary slice.
-	*us = append(*us, ZeroUid)
+	*us = append(*us, ZeroID)
 	copy((*us)[idx+1:], (*us)[idx:])
-	(*us)[idx] = uid
+	(*us)[idx] = id
 	return true
 }
 
-// Rem removes uid from UidSlice.
-func (us *UidSlice) Rem(uid Uid) bool {
-	idx, found := us.find(uid)
+// Rem removes uid from IDSlice.
+func (us *IDSlice) Rem(id ID) bool {
+	idx, found := us.find(id)
 	if !found {
 		return false
 	}
@@ -217,21 +217,21 @@ func (us *UidSlice) Rem(uid Uid) bool {
 	return true
 }
 
-// Contains checks if the UidSlice contains the given uid
-func (us UidSlice) Contains(uid Uid) bool {
-	_, contains := us.find(uid)
+// Contains checks if the IDSlice contains the given uid
+func (us IDSlice) Contains(id ID) bool {
+	_, contains := us.find(id)
 	return contains
 }
 
-// P2PName takes two Uids and generates a P2P topic name
-func (uid Uid) P2PName(u2 Uid) string {
-	if !uid.IsZero() && !u2.IsZero() {
-		b1, _ := uid.MarshalBinary()
+// P2PName takes two IDs and generates a P2P topic name
+func (id ID) P2PName(u2 ID) string {
+	if !id.IsZero() && !u2.IsZero() {
+		b1, _ := id.MarshalBinary()
 		b2, _ := u2.MarshalBinary()
 
-		if uid < u2 {
+		if id < u2 {
 			b1 = append(b1, b2...)
-		} else if uid > u2 {
+		} else if id > u2 {
 			b1 = append(b2, b1...)
 		} else {
 			return "self" + base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(b1)
@@ -244,7 +244,7 @@ func (uid Uid) P2PName(u2 Uid) string {
 }
 
 // ParseP2P extracts uids from the name of a p2p topic.
-func ParseP2P(p2p string) (uid1, uid2 Uid, err error) {
+func ParseP2P(p2p string) (uid1, uid2 ID, err error) {
 	if strings.HasPrefix(p2p, "p2p") {
 		src := []byte(p2p)[3:]
 		if len(src) != p2pBase64Unpadded {
@@ -262,8 +262,8 @@ func ParseP2P(p2p string) (uid1, uid2 Uid, err error) {
 			}
 			return
 		}
-		uid1 = Uid(binary.LittleEndian.Uint64(dec))
-		uid2 = Uid(binary.LittleEndian.Uint64(dec[8:]))
+		uid1 = ID(binary.LittleEndian.Uint64(dec))
+		uid2 = ID(binary.LittleEndian.Uint64(dec[8:]))
 	} else {
 		err = errors.New("ParseP2P: missing or invalid prefix")
 	}

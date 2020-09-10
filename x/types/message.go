@@ -1,6 +1,7 @@
 package types
 
 import (
+	"encoding/hex"
 	"outgoing/x/ecode"
 	"strings"
 )
@@ -222,6 +223,35 @@ func (t ContentType) String() string {
 
 /* ---------------------------------------- Content ---------------------------------------- */
 
+type Content []byte
+
+func (c Content) Bytes() []byte {
+	return c
+}
+
+func (c Content) Length() int {
+	return len(c)
+}
+
+func (c Content) String() string {
+	return hex.EncodeToString(c)
+}
+
+func (c Content) MarshalJSON() ([]byte, error) {
+	if c == nil {
+		return []byte("null"), nil
+	}
+	return c, nil
+}
+
+func (c *Content) UnmarshalJSON(data []byte) error {
+	if c == nil {
+		return ecode.NewError("can not unmarshal JSON on nil pointer")
+	}
+	*c = append((*c)[0:0], data...)
+	return nil
+}
+
 type Message struct {
 	ID          int64       `json:"id,string"`
 	CreatedAt   int64       `json:"created_at,string"`
@@ -231,7 +261,7 @@ type Message struct {
 	Topic       string      `json:"topic"`
 	Sequence    int64       `json:"sequence,string"`
 	ContentType ContentType `json:"content_type"`
-	Body        []byte      `json:"body"`
+	Body        Content     `json:"body"`
 	Mentions    []string    `json:"mentions,omitempty"`
 }
 
@@ -241,7 +271,7 @@ type Message struct {
 }
 */
 type TextMessage struct {
-	Content string `json:"content"`
+	Content string `json:"content" validate:"required,max=2048,min=1"`
 }
 
 /*
@@ -256,8 +286,8 @@ type TextMessage struct {
 }
 */
 type ImageMessage struct {
-	FileStat FileStat `json:"file_stat"`
-	Hash     string   `json:"hash"`
+	FileStat FileStat `json:"file_stat" validate:"required"`
+	Hash     string   `json:"hash" validate:"required,max=62,min=1"`
 }
 
 /*
@@ -268,39 +298,114 @@ type ImageMessage struct {
 }
 */
 type LocationMessage struct {
-	Address   string  `json:"address"`
-	Longitude float64 `json:"longitude"`
-	Latitude  float64 `json:"latitude"`
+	Address   string  `json:"address" validate:"required"`
+	Longitude float64 `json:"longitude" validate:"required"`
+	Latitude  float64 `json:"latitude" validate:"required"`
 }
 
 type AudioMessage struct {
-	FileStat FileStat `json:"file_stat"`
+	FileStat FileStat `json:"file_stat" validate:"required"`
 	// Voice length (unit: second)
-	Length int32  `json:"length"`
-	Hash   string `json:"hash"`
+	Length int32  `json:"length" validate:"required"`
+	Hash   string `json:"hash" validate:"required,max=62,min=1"`
 }
 
 type VideoMessage struct {
-	FileStat FileStat `json:"file_stat"`
+	FileStat FileStat `json:"file_stat" validate:"required"`
 	// Video length (unit: second)
-	Length    int32  `json:"length"`
-	Thumbnail string `json:"thumbnail"`
-	Hash      string `json:"hash"`
+	Length    int32  `json:"length" validate:"required"`
+	Thumbnail string `json:"thumbnail" validate:"required"`
+	Hash      string `json:"hash" validate:"required,max=62,min=1"`
 }
 
 type FileMessage struct {
-	FileStat FileStat `json:"file_stat"`
-	Hash     string   `json:"hash"`
+	FileStat FileStat `json:"file_stat" validate:"required"`
+	Hash     string   `json:"hash" validate:"required,max=62,min=1"`
 }
 
 type QuoteMessage struct {
-	QuotedMessageID int64  `json:"quoted_message_id"`
-	Content         string `json:"content"`
+	QuotedMessageID int64  `json:"quoted_message_id" validate:"required"`
+	Content         string `json:"content" validate:"required,max=2048,min=1"`
 }
 
 type FileStat struct {
-	Filename string `gorm:"type:VARCHAR;column:filename"`
-	Size     int64  `gorm:"column:size"`
-	Width    int32  `gorm:"column:width,omitempty"`
-	Height   int32  `gorm:"column:height,omitempty"`
+	Filename string `json:"filename"`
+	Size     int64  `json:"size"`
+	Width    int32  `json:"width,omitempty"`
+	Height   int32  `json:"height,omitempty"`
+}
+
+/* ---------------------------------------- What type ---------------------------------------- */
+// 1: mentioned, 2: keypress, 3:read
+type WhatType uint8
+
+const (
+	WhatTypeMentioned WhatType = iota + 1
+	WhatTypeKeypress
+	WhatTypeRead
+)
+
+// MarshalText converts WhatType to a slice of bytes wit
+func (t WhatType) MarshalText() ([]byte, error) {
+	switch t {
+	case WhatTypeMentioned:
+		return []byte("mentioned"), nil
+	case WhatTypeKeypress:
+		return []byte("keypress"), nil
+	case WhatTypeRead:
+		return []byte("read"), nil
+	default:
+		return nil, ecode.NewError("invalid content type")
+	}
+}
+
+// UnmarshalText parses WhatType from a string. the name of the WhatType.
+func (t *WhatType) UnmarshalText(b []byte) error {
+	switch strings.ToLower(string(b)) {
+	case "mentioned":
+		*t = WhatTypeMentioned
+		return nil
+	case "keypress":
+		*t = WhatTypeKeypress
+		return nil
+	case "read":
+		*t = WhatTypeRead
+		return nil
+	default:
+		return ecode.NewError("unrecognized")
+	}
+}
+
+// MarshalJSON converts WhatType to a quoted string.
+func (t WhatType) MarshalJSON() ([]byte, error) {
+	res, err := t.MarshalText()
+	if err != nil {
+		return nil, err
+	}
+
+	return append(append([]byte{'"'}, res...), '"'), nil
+}
+
+// UnmarshalJSON reads WhatType from a quoted string.
+func (t *WhatType) UnmarshalJSON(b []byte) error {
+	if b[0] != '"' || b[len(b)-1] != '"' {
+		return ecode.NewError("syntax error")
+	}
+
+	return t.UnmarshalText(b[1 : len(b)-1])
+}
+
+func (t WhatType) String() string {
+	s, err := t.MarshalText()
+	if err != nil {
+		return "unknown"
+	}
+	return string(s)
+}
+
+type Notification struct {
+	Topic     string   `json:"topic"`
+	What      WhatType `json:"what"`
+	Sequence  int64    `json:"sequence,string,omitempty"`
+	MessageID int64    `json:"message_id,string,omitempty"`
 }

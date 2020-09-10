@@ -3,9 +3,9 @@ package grpc
 import (
 	"context"
 	"github.com/micro/go-micro/v2/broker"
-	"outgoing/app/service/api"
-	"outgoing/app/service/config"
-	"outgoing/app/service/service"
+	"outgoing/app/logic/api"
+	"outgoing/app/logic/config"
+	"outgoing/app/logic/service"
 	"outgoing/x"
 	"strings"
 
@@ -179,6 +179,16 @@ func (s *grpcServer) AddFriend(ctx context.Context, req *api.AddFriendReq, resp 
 	return nil
 }
 
+func (s *grpcServer) GetFriends(ctx context.Context, req *api.GetFriendsReq, resp *api.GetFriendsResp) error {
+	friends, err := s.s.GetFriends(ctx, req.UID)
+	if err != nil {
+		return err
+	}
+
+	resp.Friends = friends
+	return nil
+}
+
 func (s *grpcServer) DeleteFriend(ctx context.Context, req *api.DeleteFriendReq, resp *api.Empty) error {
 	err := s.s.DeleteFriend(ctx, req.UID, req.FriendUID)
 	if err != nil {
@@ -189,12 +199,22 @@ func (s *grpcServer) DeleteFriend(ctx context.Context, req *api.DeleteFriendReq,
 }
 
 func (s *grpcServer) CreateGroup(ctx context.Context, req *api.CreateGroupReq, resp *api.CreateGroupResp) error {
-	gid, err := s.s.CreateGroup(ctx, req)
+	group, err := s.s.CreateGroup(ctx, req)
 	if err != nil {
 		return err
 	}
 
-	resp.GID = gid
+	resp.Group = group
+	return nil
+}
+
+func (s *grpcServer) GetGroups(ctx context.Context, req *api.GetGroupsReq, resp *api.GetGroupsResp) error {
+	groups, err := s.s.GetGroups(ctx, req.UID)
+	if err != nil {
+		return err
+	}
+
+	resp.Groups = groups
 	return nil
 }
 
@@ -204,6 +224,16 @@ func (s *grpcServer) AddMember(ctx context.Context, req *api.AddMemberReq, resp 
 		return err
 	}
 
+	return nil
+}
+
+func (s *grpcServer) GetMembers(ctx context.Context, req *api.GetMembersReq, resp *api.GetMembersResp) error {
+	members, err := s.s.GetMembers(ctx, req.GID)
+	if err != nil {
+		return err
+	}
+
+	resp.Members = members
 	return nil
 }
 
@@ -252,5 +282,33 @@ func (s *grpcServer) PushMessage(ctx context.Context, req *api.PushMessageReq, r
 
 	resp.MessageId = id
 	resp.Sequence = sequence
+	return nil
+}
+
+func (s *grpcServer) PullMessage(ctx context.Context, req *api.PullMessageReq, resp *api.PullMessageResp) error {
+	topicMessages, err := s.s.PullMessage(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	resp.TopicMessages = topicMessages
+	return nil
+}
+
+func (s *grpcServer) ReadMessage(ctx context.Context, req *api.ReadMessageReq, resp *api.Empty) error {
+	err := s.s.ReadMessage(ctx, req)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *grpcServer) Keypress(ctx context.Context, req *api.KeypressReq, resp *api.Empty) error {
+	err := s.s.Keypress(ctx, req)
+	if err != nil {
+		return err
+	}
+
 	return nil
 }

@@ -2,9 +2,9 @@ package http
 
 import (
 	"net/http"
-	"outgoing/app/gateway/config"
-	"outgoing/app/gateway/service"
-	"outgoing/app/gateway/stats"
+	"outgoing/app/comet/config"
+	"outgoing/app/comet/service"
+	"outgoing/app/comet/stats"
 	"outgoing/x"
 	"outgoing/x/ginx"
 	"outgoing/x/log"
@@ -100,5 +100,9 @@ func (s *httpServer) serveWebSocket(c *ginx.Context) {
 		return
 	}
 
-	s.srv.SessionStore.NewSession(c, conn, s.id, s.srv)
+	err = s.srv.SessionStore.NewSession(c, conn, s.id, s.srv)
+	if err != nil {
+		c.Error(err)
+		return
+	}
 }

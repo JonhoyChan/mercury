@@ -7,13 +7,13 @@ import (
 	"github.com/micro/go-micro/v2/server"
 	"github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
-	"outgoing/app/service/auth/jwt"
-	"outgoing/app/service/auth/token"
-	"outgoing/app/service/config"
-	"outgoing/app/service/entity"
-	"outgoing/app/service/persistence"
-	"outgoing/app/service/persistence/cache"
-	"outgoing/app/service/persistence/sql"
+	"outgoing/app/logic/auth/jwt"
+	"outgoing/app/logic/auth/token"
+	"outgoing/app/logic/config"
+	"outgoing/app/logic/entity"
+	"outgoing/app/logic/persistence"
+	"outgoing/app/logic/persistence/cache"
+	"outgoing/app/logic/persistence/sql"
 	"outgoing/x/database/orm"
 	"outgoing/x/database/redis"
 	"outgoing/x/database/sqlx"
@@ -78,6 +78,28 @@ func NewService(c config.Provider) (*Service, error) {
 	}
 
 	return s, nil
+}
+
+func (s *Service) Close() error {
+	if s.cache != nil {
+		if err := s.cache.Close(); err != nil {
+			return err
+		}
+	}
+	if s.persister != nil {
+		if err := s.persister.Close(); err != nil {
+			return err
+		}
+	}
+	if s.antsPool != nil {
+		s.antsPool.Release()
+	}
+	s.doneChan <- struct{}{}
+	close(s.doneChan)
+	for _, c := range s.messageChan {
+		close(c)
+	}
+	return nil
 }
 
 func (s *Service) withTokenAuthenticator() error {

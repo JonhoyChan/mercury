@@ -9,48 +9,48 @@ import (
 	"golang.org/x/crypto/xtea"
 )
 
-// UidGenerator holds snowflake and encryption paramenets.
-type UidGenerator struct {
+// IDGenerator holds snowflake and encryption paramenets.
+type IDGenerator struct {
 	seq    *snowflake.Node
 	cipher *xtea.Cipher
 }
 
-type GeneratorUIDProvider interface {
-	GeneratorUID() *config.GeneratorUIDConfig
+type GeneratorIDProvider interface {
+	GeneratorID() *config.GeneratorIDConfig
 }
 
-// Init initialises the Uid generator
-func (ug *UidGenerator) Init(c GeneratorUIDProvider) error {
+// Init initialises the ID generator
+func (g *IDGenerator) Init(c GeneratorIDProvider) error {
 	var err error
 
-	if ug.seq == nil {
-		ug.seq, err = snowflake.NewNode(c.GeneratorUID().WorkID)
+	if g.seq == nil {
+		g.seq, err = snowflake.NewNode(c.GeneratorID().WorkID)
 	}
-	if ug.cipher == nil {
-		ug.cipher, err = xtea.NewCipher(c.GeneratorUID().Key)
+	if g.cipher == nil {
+		g.cipher, err = xtea.NewCipher(c.GeneratorID().Key)
 	}
 
 	return err
 }
 
 // Get generates a unique weakly-encryped random-looking ID.
-// The Uid is a unit64 with the highest bit possibly set which makes it
+// The ID is a unit64 with the highest bit possibly set which makes it
 // incompatible with go's pre-1.9 gorm package.
-func (ug *UidGenerator) Get() Uid {
-	buf := getIDBuffer(ug)
-	return Uid(binary.LittleEndian.Uint64(buf))
+func (g *IDGenerator) Get() ID {
+	buf := getIDBuffer(g)
+	return ID(binary.LittleEndian.Uint64(buf))
 }
 
 // GetStr generates the same unique ID as Get then returns it as
 // base64-encoded string. Slightly more efficient than calling Get()
 // then base64-encoding the result.
-func (ug *UidGenerator) GetStr() string {
-	buf := getIDBuffer(ug)
+func (g *IDGenerator) GetStr() string {
+	buf := getIDBuffer(g)
 	return base64.URLEncoding.WithPadding(base64.NoPadding).EncodeToString(buf)
 }
 
-// getIdBuffer returns a byte array holding the Uid bytes
-func getIDBuffer(ug *UidGenerator) []byte {
+// getIdBuffer returns a byte array holding the ID bytes
+func getIDBuffer(ug *IDGenerator) []byte {
 	id := uint64(ug.seq.Generate().Int64())
 
 	var src = make([]byte, 8)
@@ -61,26 +61,26 @@ func getIDBuffer(ug *UidGenerator) []byte {
 	return dst
 }
 
-// DecodeUid takes an encrypted Uid and decrypts it into a non-negative int64.
+// DecodeID takes an encrypted ID and decrypts it into a non-negative int64.
 // This is needed for go/gorm compatibility where uint64 with high bit
 // set is unsupported and possibly for other uses such as MySQL's recommendation
 // for sequential primary keys.
-func (ug *UidGenerator) DecodeUid(uid Uid) int64 {
+func (g *IDGenerator) DecodeID(id ID) int64 {
 	var src = make([]byte, 8)
 	var dst = make([]byte, 8)
-	binary.LittleEndian.PutUint64(src, uint64(uid))
-	ug.cipher.Decrypt(dst, src)
+	binary.LittleEndian.PutUint64(src, uint64(id))
+	g.cipher.Decrypt(dst, src)
 	return int64(binary.LittleEndian.Uint64(dst))
 }
 
-// EncodeInt64 takes a positive int64 and encrypts it into a Uid.
+// EncodeInt64 takes a positive int64 and encrypts it into a ID.
 // This is needed for go/gorm compatibility where uint64 with high bit
 // set is unsupported  and possibly for other uses such as MySQL's recommendation
 // for sequential primary keys.
-func (ug *UidGenerator) EncodeInt64(val int64) Uid {
+func (g *IDGenerator) EncodeInt64(val int64) ID {
 	var src = make([]byte, 8)
 	var dst = make([]byte, 8)
 	binary.LittleEndian.PutUint64(src, uint64(val))
-	ug.cipher.Encrypt(dst, src)
-	return Uid(binary.LittleEndian.Uint64(dst))
+	g.cipher.Encrypt(dst, src)
+	return ID(binary.LittleEndian.Uint64(dst))
 }

@@ -2,7 +2,7 @@ package sql
 
 import (
 	"context"
-	"outgoing/app/service/persistence"
+	"outgoing/app/logic/persistence"
 	"outgoing/x/database/sqlx"
 	"outgoing/x/ecode"
 	"time"
@@ -52,6 +52,17 @@ INSERT INTO
 VALUES
     ($1, $1, $2, $3),
     ($1, $1, $3, $2);
+`
+
+	getFriendsSQL = `
+SELECT
+	friend_user_id
+FROM
+	friend
+WHERE
+	user_id = $1
+ORDER BY
+	created_at DESC;
 `
 
 	deleteFriendSQL = `
@@ -148,6 +159,25 @@ func (p *userPersister) AddFriend(_ context.Context, in *persistence.UserFriend)
 	}
 
 	return nil
+}
+
+func (p *userPersister) GetFriends(_ context.Context, userID int64) ([]int64, error) {
+	rows, err := p.db.Query(getFriendsSQL, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var friendIDs []int64
+	for rows.Next() {
+		var friendID int64
+		if err := rows.Scan(&friendID); err != nil {
+			return nil, err
+		}
+
+		friendIDs = append(friendIDs, friendID)
+	}
+
+	return friendIDs, nil
 }
 
 func (p *userPersister) DeleteFriend(_ context.Context, in *persistence.UserFriend) error {

@@ -68,6 +68,19 @@ func joinInt32(slice []int32, sep string) string {
 	return string(b)
 }
 
+func SplitInt64(s, sep string) []int64 {
+	slice := strings.Split(s, sep)
+
+	n := len(slice)
+	a := make([]int64, n)
+	i := 0
+	for i < n {
+		a[i], _ = strconv.ParseInt(slice[i], 10, 64)
+		i++
+	}
+	return a
+}
+
 func IsInSlice(slice interface{}, item interface{}) bool {
 	s := reflect.ValueOf(slice)
 	if s.Kind() != reflect.Slice {

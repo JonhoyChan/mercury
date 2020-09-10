@@ -4,9 +4,9 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"outgoing/app/service/config"
-	"outgoing/app/service/server/grpc"
-	"outgoing/app/service/service"
+	"outgoing/app/logic/config"
+	"outgoing/app/logic/server/grpc"
+	"outgoing/app/logic/service"
 	"outgoing/x"
 	"outgoing/x/log"
 	"path/filepath"
@@ -22,7 +22,7 @@ func init() {
 	// Absolute paths are left unchanged.
 	rootPath, _ := filepath.Split(executable)
 
-	path := x.ToAbsolutePath(rootPath, "chat-service.yml")
+	path := x.ToAbsolutePath(rootPath, "mercury-logic.yml")
 
 	flag.StringVar(&configFile, "config", path, "Path to config file.")
 }

@@ -118,8 +118,8 @@ func (p *ViperProvider) HasherBCrypt() *config.HasherBCryptConfig {
 	}
 }
 
-func (p *ViperProvider) GeneratorUID() *config.GeneratorUIDConfig {
-	return &config.GeneratorUIDConfig{
+func (p *ViperProvider) GeneratorID() *config.GeneratorIDConfig {
+	return &config.GeneratorIDConfig{
 		WorkID: v.GetInt64(config.ViperKeyGeneratorIDWorkID),
 		Key:    []byte(v.GetString(config.ViperKeyGeneratorIDKey)),
 	}

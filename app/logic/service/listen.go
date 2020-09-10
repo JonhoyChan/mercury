@@ -1,7 +1,7 @@
 package service
 
 import (
-	"outgoing/app/service/api"
+	"outgoing/app/logic/api"
 	"outgoing/x/types"
 )
 

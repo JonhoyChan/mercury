@@ -61,12 +61,18 @@ type ChatAdminService interface {
 	GenerateUserToken(ctx context.Context, in *GenerateUserTokenReq, opts ...client.CallOption) (*TokenResp, error)
 	// Add friend
 	AddFriend(ctx context.Context, in *AddFriendReq, opts ...client.CallOption) (*Empty, error)
+	// Get friends
+	GetFriends(ctx context.Context, in *GetFriendsReq, opts ...client.CallOption) (*GetFriendsResp, error)
 	// Delete friend
 	DeleteFriend(ctx context.Context, in *DeleteFriendReq, opts ...client.CallOption) (*Empty, error)
 	// Create new group
 	CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...client.CallOption) (*CreateGroupResp, error)
+	// Get groups
+	GetGroups(ctx context.Context, in *GetGroupsReq, opts ...client.CallOption) (*GetGroupsResp, error)
 	// Add user to group
 	AddMember(ctx context.Context, in *AddMemberReq, opts ...client.CallOption) (*Empty, error)
+	// Get users of the group
+	GetMembers(ctx context.Context, in *GetMembersReq, opts ...client.CallOption) (*GetMembersResp, error)
 	// Listening all real-time messages under the client to which the current token belongs
 	Listen(ctx context.Context, in *ListenReq, opts ...client.CallOption) (ChatAdmin_ListenService, error)
 }
@@ -173,6 +179,16 @@ func (c *chatAdminService) AddFriend(ctx context.Context, in *AddFriendReq, opts
 	return out, nil
 }
 
+func (c *chatAdminService) GetFriends(ctx context.Context, in *GetFriendsReq, opts ...client.CallOption) (*GetFriendsResp, error) {
+	req := c.c.NewRequest(c.name, "ChatAdmin.GetFriends", in)
+	out := new(GetFriendsResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *chatAdminService) DeleteFriend(ctx context.Context, in *DeleteFriendReq, opts ...client.CallOption) (*Empty, error) {
 	req := c.c.NewRequest(c.name, "ChatAdmin.DeleteFriend", in)
 	out := new(Empty)
@@ -193,9 +209,29 @@ func (c *chatAdminService) CreateGroup(ctx context.Context, in *CreateGroupReq, 
 	return out, nil
 }
 
+func (c *chatAdminService) GetGroups(ctx context.Context, in *GetGroupsReq, opts ...client.CallOption) (*GetGroupsResp, error) {
+	req := c.c.NewRequest(c.name, "ChatAdmin.GetGroups", in)
+	out := new(GetGroupsResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 func (c *chatAdminService) AddMember(ctx context.Context, in *AddMemberReq, opts ...client.CallOption) (*Empty, error) {
 	req := c.c.NewRequest(c.name, "ChatAdmin.AddMember", in)
 	out := new(Empty)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatAdminService) GetMembers(ctx context.Context, in *GetMembersReq, opts ...client.CallOption) (*GetMembersResp, error) {
+	req := c.c.NewRequest(c.name, "ChatAdmin.GetMembers", in)
+	out := new(GetMembersResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
 		return nil, err
@@ -273,12 +309,18 @@ type ChatAdminHandler interface {
 	GenerateUserToken(context.Context, *GenerateUserTokenReq, *TokenResp) error
 	// Add friend
 	AddFriend(context.Context, *AddFriendReq, *Empty) error
+	// Get friends
+	GetFriends(context.Context, *GetFriendsReq, *GetFriendsResp) error
 	// Delete friend
 	DeleteFriend(context.Context, *DeleteFriendReq, *Empty) error
 	// Create new group
 	CreateGroup(context.Context, *CreateGroupReq, *CreateGroupResp) error
+	// Get groups
+	GetGroups(context.Context, *GetGroupsReq, *GetGroupsResp) error
 	// Add user to group
 	AddMember(context.Context, *AddMemberReq, *Empty) error
+	// Get users of the group
+	GetMembers(context.Context, *GetMembersReq, *GetMembersResp) error
 	// Listening all real-time messages under the client to which the current token belongs
 	Listen(context.Context, *ListenReq, ChatAdmin_ListenStream) error
 }
@@ -294,9 +336,12 @@ func RegisterChatAdminHandler(s server.Server, hdlr ChatAdminHandler, opts ...se
 		DeleteUser(ctx context.Context, in *DeleteUserReq, out *Empty) error
 		GenerateUserToken(ctx context.Context, in *GenerateUserTokenReq, out *TokenResp) error
 		AddFriend(ctx context.Context, in *AddFriendReq, out *Empty) error
+		GetFriends(ctx context.Context, in *GetFriendsReq, out *GetFriendsResp) error
 		DeleteFriend(ctx context.Context, in *DeleteFriendReq, out *Empty) error
 		CreateGroup(ctx context.Context, in *CreateGroupReq, out *CreateGroupResp) error
+		GetGroups(ctx context.Context, in *GetGroupsReq, out *GetGroupsResp) error
 		AddMember(ctx context.Context, in *AddMemberReq, out *Empty) error
+		GetMembers(ctx context.Context, in *GetMembersReq, out *GetMembersResp) error
 		Listen(ctx context.Context, stream server.Stream) error
 	}
 	type ChatAdmin struct {
@@ -346,6 +391,10 @@ func (h *chatAdminHandler) AddFriend(ctx context.Context, in *AddFriendReq, out 
 	return h.ChatAdminHandler.AddFriend(ctx, in, out)
 }
 
+func (h *chatAdminHandler) GetFriends(ctx context.Context, in *GetFriendsReq, out *GetFriendsResp) error {
+	return h.ChatAdminHandler.GetFriends(ctx, in, out)
+}
+
 func (h *chatAdminHandler) DeleteFriend(ctx context.Context, in *DeleteFriendReq, out *Empty) error {
 	return h.ChatAdminHandler.DeleteFriend(ctx, in, out)
 }
@@ -354,8 +403,16 @@ func (h *chatAdminHandler) CreateGroup(ctx context.Context, in *CreateGroupReq, 
 	return h.ChatAdminHandler.CreateGroup(ctx, in, out)
 }
 
+func (h *chatAdminHandler) GetGroups(ctx context.Context, in *GetGroupsReq, out *GetGroupsResp) error {
+	return h.ChatAdminHandler.GetGroups(ctx, in, out)
+}
+
 func (h *chatAdminHandler) AddMember(ctx context.Context, in *AddMemberReq, out *Empty) error {
 	return h.ChatAdminHandler.AddMember(ctx, in, out)
+}
+
+func (h *chatAdminHandler) GetMembers(ctx context.Context, in *GetMembersReq, out *GetMembersResp) error {
+	return h.ChatAdminHandler.GetMembers(ctx, in, out)
 }
 
 func (h *chatAdminHandler) Listen(ctx context.Context, stream server.Stream) error {
@@ -415,6 +472,12 @@ type ChatService interface {
 	Heartbeat(ctx context.Context, in *HeartbeatReq, opts ...client.CallOption) (*Empty, error)
 	// Push message
 	PushMessage(ctx context.Context, in *PushMessageReq, opts ...client.CallOption) (*PushMessageResp, error)
+	// Pull message
+	PullMessage(ctx context.Context, in *PullMessageReq, opts ...client.CallOption) (*PullMessageResp, error)
+	// Read message
+	ReadMessage(ctx context.Context, in *ReadMessageReq, opts ...client.CallOption) (*Empty, error)
+	// Keypress
+	Keypress(ctx context.Context, in *KeypressReq, opts ...client.CallOption) (*Empty, error)
 }
 
 type chatService struct {
@@ -469,6 +532,36 @@ func (c *chatService) PushMessage(ctx context.Context, in *PushMessageReq, opts 
 	return out, nil
 }
 
+func (c *chatService) PullMessage(ctx context.Context, in *PullMessageReq, opts ...client.CallOption) (*PullMessageResp, error) {
+	req := c.c.NewRequest(c.name, "Chat.PullMessage", in)
+	out := new(PullMessageResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatService) ReadMessage(ctx context.Context, in *ReadMessageReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "Chat.ReadMessage", in)
+	out := new(Empty)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatService) Keypress(ctx context.Context, in *KeypressReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "Chat.Keypress", in)
+	out := new(Empty)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // Server API for Chat service
 
 type ChatHandler interface {
@@ -480,6 +573,12 @@ type ChatHandler interface {
 	Heartbeat(context.Context, *HeartbeatReq, *Empty) error
 	// Push message
 	PushMessage(context.Context, *PushMessageReq, *PushMessageResp) error
+	// Pull message
+	PullMessage(context.Context, *PullMessageReq, *PullMessageResp) error
+	// Read message
+	ReadMessage(context.Context, *ReadMessageReq, *Empty) error
+	// Keypress
+	Keypress(context.Context, *KeypressReq, *Empty) error
 }
 
 func RegisterChatHandler(s server.Server, hdlr ChatHandler, opts ...server.HandlerOption) error {
@@ -488,6 +587,9 @@ func RegisterChatHandler(s server.Server, hdlr ChatHandler, opts ...server.Handl
 		Disconnect(ctx context.Context, in *DisconnectReq, out *Empty) error
 		Heartbeat(ctx context.Context, in *HeartbeatReq, out *Empty) error
 		PushMessage(ctx context.Context, in *PushMessageReq, out *PushMessageResp) error
+		PullMessage(ctx context.Context, in *PullMessageReq, out *PullMessageResp) error
+		ReadMessage(ctx context.Context, in *ReadMessageReq, out *Empty) error
+		Keypress(ctx context.Context, in *KeypressReq, out *Empty) error
 	}
 	type Chat struct {
 		chat
@@ -514,4 +616,16 @@ func (h *chatHandler) Heartbeat(ctx context.Context, in *HeartbeatReq, out *Empt
 
 func (h *chatHandler) PushMessage(ctx context.Context, in *PushMessageReq, out *PushMessageResp) error {
 	return h.ChatHandler.PushMessage(ctx, in, out)
+}
+
+func (h *chatHandler) PullMessage(ctx context.Context, in *PullMessageReq, out *PullMessageResp) error {
+	return h.ChatHandler.PullMessage(ctx, in, out)
+}
+
+func (h *chatHandler) ReadMessage(ctx context.Context, in *ReadMessageReq, out *Empty) error {
+	return h.ChatHandler.ReadMessage(ctx, in, out)
+}
+
+func (h *chatHandler) Keypress(ctx context.Context, in *KeypressReq, out *Empty) error {
+	return h.ChatHandler.Keypress(ctx, in, out)
 }

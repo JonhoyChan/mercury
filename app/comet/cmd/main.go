@@ -4,10 +4,10 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"outgoing/app/gateway/config"
-	"outgoing/app/gateway/server/grpc"
-	"outgoing/app/gateway/server/http"
-	"outgoing/app/gateway/service"
+	"outgoing/app/comet/config"
+	"outgoing/app/comet/server/grpc"
+	"outgoing/app/comet/server/http"
+	"outgoing/app/comet/service"
 	"outgoing/x"
 	"outgoing/x/log"
 	"path/filepath"
@@ -24,7 +24,7 @@ func init() {
 	// Absolute paths are left unchanged.
 	rootPath, _ := filepath.Split(executable)
 
-	path := x.ToAbsolutePath(rootPath, "chat-gateway.yml")
+	path := x.ToAbsolutePath(rootPath, "mercury-comet.yml")
 
 	flag.StringVar(&configFile, "config", path, "Path to config file.")
 }

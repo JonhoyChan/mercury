@@ -2,7 +2,7 @@ package sql
 
 import (
 	"context"
-	"outgoing/app/service/persistence"
+	"outgoing/app/logic/persistence"
 	"outgoing/x/database/sqlx"
 	"outgoing/x/ecode"
 	"time"
@@ -44,6 +44,28 @@ INSERT INTO
 VALUES
     ($1, $2, $2, $3, $4, $5, $6, $7, $8, $9, 1);
 `
+
+	getGroupsSQL = `
+SELECT
+	g.created_at,
+	g.name,
+	g.gid,
+	g.introduction,
+	g.owner,
+	g.member_count
+FROM
+	group_member gm
+JOIN 
+	public.group g
+ON 
+	g.ID = gm.group_id
+AND
+	g.activated = true
+WHERE
+	gm.user_id = $1
+ORDER BY
+	created_at DESC;`
+
 	isGroupMemberExistSQL = `
 SELECT
     1
@@ -70,10 +92,10 @@ VALUES
 `
 )
 
-func (p *groupPersister) Create(_ context.Context, in *persistence.GroupCreate) error {
+func (p *groupPersister) Create(_ context.Context, in *persistence.GroupCreate) (*persistence.Group, error) {
 	tx, err := p.db.Begin()
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer func() {
 		if err != nil {
@@ -83,22 +105,48 @@ func (p *groupPersister) Create(_ context.Context, in *persistence.GroupCreate) 
 
 	now := time.Now().Unix()
 	if err = tx.Exec(insertGroupSQL, 1, in.GroupID, now, in.ClientID, in.Name, in.GID, in.Introduction, in.Owner, 0, true); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err = increaseClientGroupCount(tx, in.ClientID, 1); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err = tx.Exec(insertGroupMemberSQL, 1, now, in.GroupID, in.Owner); err != nil {
-		return err
+		return nil, err
 	}
 
 	if err = tx.Commit(); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return &persistence.Group{
+		CreatedAt:    now,
+		Name:         in.Name,
+		GID:          in.GID,
+		Introduction: in.Introduction,
+		Owner:        in.Owner,
+		MemberCount:  1,
+	}, nil
+}
+
+func (p *groupPersister) GetGroups(_ context.Context, userID int64) ([]*persistence.Group, error) {
+	rows, err := p.db.Query(getGroupsSQL, userID)
+	if err != nil {
+		return nil, err
+	}
+
+	var groups []*persistence.Group
+	for rows.Next() {
+		var group persistence.Group
+		if err := rows.Scan(&group.CreatedAt, &group.Name, &group.GID, &group.Introduction, &group.Owner, &group.MemberCount); err != nil {
+			return nil, err
+		}
+
+		groups = append(groups, &group)
+	}
+
+	return groups, nil
 }
 
 func increaseGroupMemberCount(tx *sqlx.Tx, id int64, count int64) error {
@@ -162,7 +210,7 @@ func (p *groupPersister) CheckMember(_ context.Context, groupID int64, userID in
 	return isExist == 1, nil
 }
 
-func (p *groupPersister) Members(_ context.Context, clientID string, groupID int64) ([]int64, error) {
+func (p *groupPersister) GetMembers(_ context.Context, clientID string, groupID int64) ([]int64, error) {
 	var isExist int
 	if err := p.db.QueryRow(isGroupExistSQL, clientID, groupID).Scan(&isExist); err != nil && err != sqlx.ErrNoRows {
 		return nil, err
@@ -177,35 +225,15 @@ func (p *groupPersister) Members(_ context.Context, clientID string, groupID int
 		return nil, err
 	}
 
-	var ids []int64
+	var memberIDs []int64
 	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
+		var memberID int64
+		if err := rows.Scan(&memberID); err != nil {
 			return nil, err
 		}
 
-		ids = append(ids, id)
+		memberIDs = append(memberIDs, memberID)
 	}
 
-	return ids, nil
-}
-
-func (p *groupPersister) Groups(_ context.Context, userID int64) ([]int64, error) {
-	// FIXME
-	rows, err := p.db.Query("SELECT group_id FROM group_member WHERE user_id = $1 ORDER BY created_at DESC;", userID)
-	if err != nil {
-		return nil, err
-	}
-
-	var ids []int64
-	for rows.Next() {
-		var id int64
-		if err := rows.Scan(&id); err != nil {
-			return nil, err
-		}
-
-		ids = append(ids, id)
-	}
-
-	return ids, nil
+	return memberIDs, nil
 }

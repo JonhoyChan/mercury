@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	chatApi "outgoing/app/service/api"
+	chatApi "outgoing/app/logic/api"
 	"outgoing/x/ecode"
 	"outgoing/x/log"
 	"outgoing/x/types"
@@ -64,4 +64,27 @@ func (s *Service) pushMessage(ctx context.Context, req *chatApi.PushMessageReq) 
 		return 0, 0, err
 	}
 	return resp.MessageId, resp.Sequence, nil
+}
+
+func (s *Service) readMessage(ctx context.Context, uid, topic string, sequence int64) error {
+	_, err := s.chatService.ReadMessage(ctx, &chatApi.ReadMessageReq{
+		UID:      uid,
+		Topic:    topic,
+		Sequence: sequence,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (s *Service) keypress(ctx context.Context, uid, topic string) error {
+	_, err := s.chatService.Keypress(ctx, &chatApi.KeypressReq{
+		UID:   uid,
+		Topic: topic,
+	})
+	if err != nil {
+		return err
+	}
+	return nil
 }

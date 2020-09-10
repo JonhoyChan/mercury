@@ -2,15 +2,16 @@ package service
 
 import (
 	"context"
-	"outgoing/app/gateway/stats"
+	"outgoing/app/comet/stats"
 	"outgoing/x"
+	"outgoing/x/ecode"
 	"outgoing/x/ksuid"
 	"outgoing/x/log"
 	"outgoing/x/websocket"
 )
 
 type SessionStore interface {
-	NewSession(ctx context.Context, conn interface{}, serverID string, srv *Service)
+	NewSession(ctx context.Context, conn interface{}, serverID string, srv *Service) error
 	Get(sid string) *Session
 	GetAll() []*Session
 	Delete(s *Session)
@@ -36,7 +37,7 @@ func NewSessionStore() *sessionStore {
 }
 
 // NewSession creates a new session and saves it to the session store.
-func (ss *sessionStore) NewSession(ctx context.Context, conn interface{}, serverID string, srv *Service) {
+func (ss *sessionStore) NewSession(ctx context.Context, conn interface{}, serverID string, srv *Service) error {
 	var s Session
 	s.ctx = ctx
 	s.sid = ksuid.New().String()
@@ -44,7 +45,7 @@ func (ss *sessionStore) NewSession(ctx context.Context, conn interface{}, server
 	s.srv = srv
 
 	if ss.cache.Existed(s.sid) {
-		panic(x.Sprintf("duplicate session ID", s.sid))
+		return ecode.ErrInternalServer.ResetMessage("duplicate session ID")
 	}
 
 	switch c := conn.(type) {
@@ -71,6 +72,7 @@ func (ss *sessionStore) NewSession(ctx context.Context, conn interface{}, server
 
 		log.Info("[Websocket] session stored", "sid", s.sid, "count", ss.cache.Length())
 	}
+	return nil
 }
 
 // Get fetches a session from the store by session ID.

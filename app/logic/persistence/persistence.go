@@ -35,6 +35,14 @@ type Cacher interface {
 	SetTopicSequence(topic string, sequence int64, lifetime time.Duration) error
 
 	IncrTopicSequence(topic string) (int64, error)
+
+	SetUserTopicLastSequence(uid, topic string, sequence int64) error
+
+	GetUserTopicsLastSequence(uid string) (map[string]int64, error)
+
+	SetUsersTopic(uids []string, topic string) error
+
+	GetUserTopics(uid string) ([]string, error)
 }
 
 type Persister interface {
@@ -69,6 +77,8 @@ type UserPersister interface {
 
 	AddFriend(ctx context.Context, in *UserFriend) error
 
+	GetFriends(_ context.Context, userID int64) ([]int64, error)
+
 	DeleteFriend(ctx context.Context, in *UserFriend) error
 }
 
@@ -76,16 +86,20 @@ type MessagePersister interface {
 	Add(_ context.Context, message *Message) error
 
 	GetTopicLastSequence(_ context.Context, topic string) (int64, error)
+
+	GetTopicMessageBySequence(_ context.Context, topic string, sequence int64) (*Message, error)
+
+	GetTopicMessagesByLastSequence(_ context.Context, topic string, sequence int64) ([]*Message, int64, error)
 }
 
 type GroupPersister interface {
-	Create(_ context.Context, in *GroupCreate) error
+	Create(_ context.Context, in *GroupCreate) (*Group, error)
 
 	AddMember(_ context.Context, in *GroupMember) error
 
 	CheckMember(_ context.Context, groupID int64, userID int64) (bool, error)
 
-	Members(_ context.Context, clientID string, groupID int64) ([]int64, error)
+	GetMembers(_ context.Context, clientID string, groupID int64) ([]int64, error)
 
-	Groups(_ context.Context, userID int64) ([]int64, error)
+	GetGroups(_ context.Context, userID int64) ([]*Group, error)
 }

@@ -2,7 +2,7 @@ package service
 
 import (
 	"context"
-	"outgoing/app/service/api"
+	"outgoing/app/logic/api"
 	"outgoing/x/ecode"
 )
 

@@ -1,7 +1,7 @@
 package service
 
 import (
-	"encoding/json"
+	jsoniter "github.com/json-iterator/go"
 	"outgoing/x/ecode"
 )
 
@@ -19,11 +19,7 @@ type Response struct {
 }
 
 func (r *Response) Marshal() (data []byte, err error) {
-	return json.Marshal(r)
-}
-
-func (r *Response) Unmarshal(data []byte) error {
-	return json.Unmarshal(data, r)
+	return jsoniter.Marshal(r)
 }
 
 type PushMessageResponse struct {

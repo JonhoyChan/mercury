@@ -14,8 +14,9 @@ const (
 	OperationHandshake
 	OperationHeartbeat
 	OperationConnect
-	OperationSync
 	OperationPush
+	OperationNotification
+	OperationBroadcast
 )
 
 // String implements Stringer interface: gets human-readable name for a numeric operation.
@@ -27,22 +28,11 @@ func (o Operation) String() string {
 	return string(s)
 }
 
-// ParseAuthLevel parses operation from a string.
+// ParseOperation parses operation from a string.
 func ParseOperation(name string) Operation {
-	switch strings.ToLower(name) {
-	case "handshake":
-		return OperationHandshake
-	case "heartbeat":
-		return OperationHeartbeat
-	case "connect":
-		return OperationConnect
-	case "sync":
-		return OperationSync
-	case "push":
-		return OperationPush
-	default:
-		return OperationUnknown
-	}
+	var o Operation
+	_ = o.UnmarshalText([]byte(name))
+	return o
 }
 
 // MarshalText converts Operation to a slice of bytes with the name of the operation.
@@ -54,10 +44,12 @@ func (o Operation) MarshalText() ([]byte, error) {
 		return []byte("heartbeat"), nil
 	case OperationConnect:
 		return []byte("connect"), nil
-	case OperationSync:
-		return []byte("sync"), nil
 	case OperationPush:
 		return []byte("push"), nil
+	case OperationNotification:
+		return []byte("notification"), nil
+	case OperationBroadcast:
+		return []byte("broadcast"), nil
 	default:
 		return []byte("unknown"), nil
 	}
@@ -72,10 +64,12 @@ func (o *Operation) UnmarshalText(b []byte) error {
 		*o = OperationHeartbeat
 	case "connect":
 		*o = OperationConnect
-	case "sync":
-		*o = OperationSync
 	case "push":
 		*o = OperationPush
+	case "notification":
+		*o = OperationNotification
+	case "broadcast":
+		*o = OperationBroadcast
 	default:
 		*o = OperationUnknown
 	}

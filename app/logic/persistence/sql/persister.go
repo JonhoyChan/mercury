@@ -1,7 +1,7 @@
 package sql
 
 import (
-	"outgoing/app/service/persistence"
+	"outgoing/app/logic/persistence"
 	"outgoing/x/database/sqlx"
 )
 

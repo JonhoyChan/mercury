@@ -3,8 +3,8 @@ package service
 import (
 	"context"
 	"github.com/google/uuid"
-	"outgoing/app/service/api"
-	"outgoing/app/service/persistence"
+	"outgoing/app/logic/api"
+	"outgoing/app/logic/persistence"
 	"outgoing/x"
 	"outgoing/x/ecode"
 )

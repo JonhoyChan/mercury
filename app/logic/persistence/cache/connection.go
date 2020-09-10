@@ -9,13 +9,13 @@ import (
 
 const (
 	// keys
-	hashUserSessionServerKey = "userSessionServer:%s"
-	stringSessionServerKey   = "sessionServer:%s"
+	userSessionServerKey = "userSessionServer:%s"
+	sessionServerKey     = "sessionServer:%s"
 
 	// scripts
 	addMappingLUA = `
 		if redis.call("HEXISTS", KEYS[1], ARGV[1]) == 1 then
-            error("mapping already exists")
+            return 0
         end
 		redis.call("HSET", KEYS[1], ARGV[1], ARGV[2])
 		redis.call("EXPIRE", KEYS[1], ARGV[3])
@@ -26,17 +26,17 @@ const (
 )
 
 // Mapping expiration time
-var mappingExpire = (30 * time.Minute) / time.Second
+var mappingExpire = 1800 * time.Second
 
 // key: uid; field: sid; value: serverID
-func (c *Cache) AddMapping(uid, sid, serverID string) (err error) {
+func (c *Cache) AddMapping(uid, sid, serverID string) error {
 	keys := []string{
-		x.Sprintf(hashUserSessionServerKey, uid),
-		x.Sprintf(stringSessionServerKey, sid),
+		x.Sprintf(userSessionServerKey, uid),
+		x.Sprintf(sessionServerKey, sid),
 	}
-	args := []interface{}{sid, serverID, int32(mappingExpire)}
-	err = redis.NewScript(addMappingLUA).Run(c.client, keys, args...).Err()
-	return
+	args := []interface{}{sid, serverID, mappingExpire.Seconds()}
+	err := redis.NewScript(addMappingLUA).Run(c.client, keys, args...).Err()
+	return err
 }
 
 func (c *Cache) ExpireMapping(uid, sid string) (bool, error) {
@@ -44,7 +44,7 @@ func (c *Cache) ExpireMapping(uid, sid string) (bool, error) {
 		expired bool
 		err     error
 	)
-	expired, err = c.client.Expire(x.Sprintf(hashUserSessionServerKey, uid), mappingExpire).Result()
+	expired, err = c.client.Expire(x.Sprintf(userSessionServerKey, uid), mappingExpire).Result()
 	if err != nil {
 		return false, err
 	}
@@ -52,7 +52,7 @@ func (c *Cache) ExpireMapping(uid, sid string) (bool, error) {
 		return expired, err
 	}
 
-	expired, err = c.client.Expire(x.Sprintf(stringSessionServerKey, sid), mappingExpire).Result()
+	expired, err = c.client.Expire(x.Sprintf(sessionServerKey, sid), mappingExpire).Result()
 	if err != nil {
 		return false, err
 	}
@@ -63,11 +63,11 @@ func (c *Cache) ExpireMapping(uid, sid string) (bool, error) {
 // Delete the mapping
 func (c *Cache) DeleteMapping(uid, sid string) error {
 	var err error
-	if err = c.client.HDel(x.Sprintf(hashUserSessionServerKey, uid), sid).Err(); err != nil {
+	if err = c.client.HDel(x.Sprintf(userSessionServerKey, uid), sid).Err(); err != nil {
 		return err
 	}
 
-	if err = c.client.Del(x.Sprintf(stringSessionServerKey, sid)).Err(); err != nil {
+	if err = c.client.Del(x.Sprintf(sessionServerKey, sid)).Err(); err != nil {
 		return err
 	}
 
@@ -78,7 +78,7 @@ func (c *Cache) GetSessions(uids ...string) (map[string]string, []string, error)
 	sessions := make(map[string]string)
 	var onlineUIDs []string
 	for _, uid := range uids {
-		result, err := c.client.HGetAll(x.Sprintf(hashUserSessionServerKey, uid)).Result()
+		result, err := c.client.HGetAll(x.Sprintf(userSessionServerKey, uid)).Result()
 		if err != nil {
 			return nil, nil, err
 		}
@@ -100,7 +100,7 @@ func (c *Cache) GetServerIDs(sids ...string) ([]string, error) {
 	if len(sids) > 0 {
 		var keys []string
 		for _, sid := range sids {
-			keys = append(keys, x.Sprintf(hashUserSessionServerKey, sid))
+			keys = append(keys, x.Sprintf(sessionServerKey, sid))
 		}
 		result, err := c.client.MGet(keys...).Result()
 		if err != nil {
