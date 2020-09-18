@@ -54,7 +54,7 @@ func main() {
 		s := <-signalChan
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			log.Info("[ChatGateway] service shutdown")
+			log.Info("[MercuryComet] service shutdown")
 			srv.SessionStore.Shutdown()
 			return
 		case syscall.SIGHUP:

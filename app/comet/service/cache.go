@@ -16,6 +16,9 @@ type Cache interface {
 }
 
 func NewDefaultCache() Cache {
+	stats.RegisterInt("LiveSessions")
+	stats.RegisterInt("TotalSessions")
+
 	return &defaultCache{
 		mux: sync.RWMutex{},
 		kv:  make(map[string]*Session),

@@ -10,4 +10,5 @@ type Provider interface {
 	config.BrokerProvider
 	CometServiceName() string
 	PushMessageTopic() string
+	BroadcastMessageTopic() string
 }

@@ -11,9 +11,8 @@ import (
 )
 
 const (
-	viperKeyCometServiceName      = "rpc_services.comet.service_name"
-	viperKeyTopicPushMessage      = "topic.push_message"
-	viperKeyTopicBroadcastMessage = "topic.broadcast_message"
+	viperKeyConfigPassphrase = "config.passphrase"
+	viperKeyConfigPath       = "config.path"
 )
 
 var v *viper.Viper
@@ -67,31 +66,10 @@ func (p *ViperProvider) LogMode() string {
 	return logMode
 }
 
-func (p *ViperProvider) Etcd() *config.EtcdConfig {
-	return &config.EtcdConfig{
-		Enable:    v.GetBool(config.ViperKeyEtcdEnable),
-		Addresses: v.GetStringSlice(config.ViperKeyEtcdAddresses),
-		Timeout:   v.GetDuration(config.ViperKeyEtcdTimeout),
-	}
+func (p *ViperProvider) ConfigPath() string {
+	return v.GetString(viperKeyConfigPath)
 }
 
-func (p *ViperProvider) Stan() *config.StanConfig {
-	return &config.StanConfig{
-		Enable:      v.GetBool(config.ViperKeyStanEnable),
-		Addresses:   v.GetStringSlice(config.ViperKeyStanAddresses),
-		ClusterID:   v.GetString(config.ViperKeyStanClusterID),
-		DurableName: v.GetString(config.ViperKeyStanDurableName),
-	}
-}
-
-func (p *ViperProvider) CometServiceName() string {
-	return v.GetString(viperKeyCometServiceName)
-}
-
-func (p *ViperProvider) PushMessageTopic() string {
-	return v.GetString(viperKeyTopicPushMessage)
-}
-
-func (p *ViperProvider) BroadcastMessageTopic() string {
-	return v.GetString(viperKeyTopicBroadcastMessage)
+func (p *ViperProvider) ConfigPassphrase() string {
+	return v.GetString(viperKeyConfigPassphrase)
 }

@@ -61,6 +61,10 @@ func (s *Service) WithBroker(b broker.Broker) {
 			log.Error("[WatchComet] failed to subscribe topic", "topic", s.config.PushMessageTopic(), "error", err)
 			return
 		}
+		if _, err := s.broker.Subscribe(s.config.BroadcastMessageTopic(), s.subscribeBroadcastMessage); err != nil {
+			log.Error("[WatchComet] failed to subscribe topic", "topic", s.config.BroadcastMessageTopic(), "error", err)
+			return
+		}
 	}
 }
 
@@ -96,9 +100,9 @@ func (s *Service) watch() {
 		result, err := watcher.Next()
 		if err != nil {
 			if err != registry.ErrWatcherStopped {
-				log.Error("[WatchComet] failed to watch next", "error", err)
+				log.Error("[watch] failed to watch next", "error", err)
 			} else {
-				log.Error("[WatchComet] watcher stopped")
+				log.Error("[watch] watcher stopped")
 			}
 			break
 		}
@@ -119,14 +123,14 @@ func (s *Service) sync() {
 		select {
 		case <-ticker.C:
 			if err := s.syncCometNodes(); err != nil {
-				log.Error("[Sync] failed to sync comet nodes", "error", err)
+				log.Error("[sync] failed to sync comet nodes", "error", err)
 			}
 		case <-s.watchChan:
 			if err := s.syncCometNodes(); err != nil {
-				log.Error("[Sync] failed to sync comet nodes", "error", err)
+				log.Error("[sync] failed to sync comet nodes", "error", err)
 			}
 		case <-s.stopChan:
-			log.Info("[Sync] sync stopped")
+			log.Info("[sync] sync stopped")
 			return
 		}
 	}
@@ -138,7 +142,7 @@ func (s *Service) syncCometNodes() error {
 	cometServiceName := s.config.CometServiceName()
 	cometServices, err := s.registry.GetService(cometServiceName)
 	if err != nil {
-		log.Error("[SyncCometNodes] failed to new comet", "error", err)
+		log.Error("[syncCometNodes] failed to new comet", "error", err)
 		return err
 	}
 
@@ -162,19 +166,19 @@ func (s *Service) syncCometNodes() error {
 
 			c, err := NewComet(id, node.Address)
 			if err != nil {
-				log.Error("[SyncCometNodes] can not new comet", "error", err)
+				log.Error("[syncCometNodes] can not new comet", "error", err)
 				return err
 			}
 
 			comets[id] = c
 
-			log.Info("[SyncCometNodes] new comet", "id", id, "address", node.Address)
+			log.Info("[syncCometNodes] new comet", "id", id, "address", node.Address)
 		}
 
 		for id, old := range s.cometServers {
 			if _, ok := comets[id]; !ok {
 				old.cancel()
-				log.Info("[SyncCometNodes] delete comet", "id", id)
+				log.Info("[syncCometNodes] delete comet", "id", id)
 			}
 		}
 

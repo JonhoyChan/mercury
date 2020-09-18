@@ -32,3 +32,4 @@ rpc_services:
 
 topic:
   push_message: mercury-push-message
+  broadcast_message: mercury-broadcast-message

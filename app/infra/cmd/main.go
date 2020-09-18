@@ -4,9 +4,9 @@ import (
 	"flag"
 	"os"
 	"os/signal"
-	"outgoing/app/job/config"
-	"outgoing/app/job/server/job"
-	"outgoing/app/job/service"
+	"outgoing/app/infra/config"
+	"outgoing/app/infra/server/http"
+	"outgoing/app/infra/service"
 	"outgoing/x"
 	"outgoing/x/log"
 	"path/filepath"
@@ -23,7 +23,7 @@ func init() {
 	// Absolute paths are left unchanged.
 	rootPath, _ := filepath.Split(executable)
 
-	path := x.ToAbsolutePath(rootPath, "mercury-job.yml")
+	path := x.ToAbsolutePath(rootPath, "mercury-infra.yml")
 
 	flag.StringVar(&configFile, "config", path, "Path to config file.")
 }
@@ -40,9 +40,12 @@ func main() {
 	lvl, _ := log.LvlFromString(c.LogMode())
 	log.Root().SetHandler(log.LvlFilterHandler(lvl, log.StreamHandler(os.Stdout, log.TerminalFormat(true))))
 
-	srv := service.NewService(c)
+	srv, err := service.NewService(c)
+	if err != nil {
+		panic("unable to initialize service:" + err.Error())
+	}
 
-	job.Init(c, srv)
+	http.Init(c, srv)
 
 	// Signal handler
 	signalChan := make(chan os.Signal, 1)
@@ -51,8 +54,7 @@ func main() {
 		s := <-signalChan
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			log.Info("[MercuryJob] service shutdown")
-			srv.Close()
+			log.Info("[MercuryInfra] service shutdown")
 			return
 		case syscall.SIGHUP:
 		default:

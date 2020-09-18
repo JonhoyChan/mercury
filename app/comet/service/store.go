@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"outgoing/app/comet/stats"
 	"outgoing/x"
 	"outgoing/x/ecode"
 	"outgoing/x/ksuid"
@@ -29,9 +28,6 @@ func NewSessionStore() *sessionStore {
 	ss := &sessionStore{
 		cache: NewDefaultCache(),
 	}
-
-	stats.RegisterInt("LiveSessions")
-	stats.RegisterInt("TotalSessions")
 
 	return ss
 }

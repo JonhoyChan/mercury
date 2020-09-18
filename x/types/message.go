@@ -146,6 +146,7 @@ const (
 	ContentTypeAudio
 	ContentTypeVideo
 	ContentTypeFile
+	ContentTypeQuote
 )
 
 // MarshalText converts ContentType to a slice of bytes wit
@@ -155,14 +156,16 @@ func (t ContentType) MarshalText() ([]byte, error) {
 		return []byte("text"), nil
 	case ContentTypeImage:
 		return []byte("image"), nil
-	case ContentTypeAudio:
-		return []byte("location"), nil
-	case ContentTypeVideo:
-		return []byte("audio"), nil
-	case ContentTypeFile:
-		return []byte("video"), nil
 	case ContentTypeLocation:
+		return []byte("location"), nil
+	case ContentTypeAudio:
+		return []byte("audio"), nil
+	case ContentTypeVideo:
+		return []byte("video"), nil
+	case ContentTypeFile:
 		return []byte("file"), nil
+	case ContentTypeQuote:
+		return []byte("quote"), nil
 	default:
 		return nil, ecode.NewError("invalid content type")
 	}
@@ -178,16 +181,19 @@ func (t *ContentType) UnmarshalText(b []byte) error {
 		*t = ContentTypeImage
 		return nil
 	case "location":
-		*t = ContentTypeAudio
+		*t = ContentTypeLocation
 		return nil
 	case "audio":
-		*t = ContentTypeVideo
+		*t = ContentTypeAudio
 		return nil
 	case "video":
-		*t = ContentTypeFile
+		*t = ContentTypeVideo
 		return nil
 	case "file":
-		*t = ContentTypeLocation
+		*t = ContentTypeFile
+		return nil
+	case "quote":
+		*t = ContentTypeQuote
 		return nil
 	default:
 		return ecode.NewError("unrecognized")

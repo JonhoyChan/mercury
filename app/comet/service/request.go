@@ -90,51 +90,20 @@ type PushMessageRequest struct {
 	// Message receiver
 	// If a single chat, the value is user ID.
 	// If a group chat, the value is group ID.
-	Receiver string `json:"receiver" validate:"required,is-id"`
+	Receiver string `json:"receiver" validate:"required,is-receiver"`
 	// The type of the message content. e.g. (10: text, 20:image, 30:location, 40:audio, 50:video, 60:file)
 	ContentType types.ContentType `json:"content_type"`
 	// The body of the message, will change according to the content type
-	Body types.Content `json:"body" validate:"required"`
+	Body types.Content `json:"body" validate:"required,is-body"`
 	// List of user IDs mentioned in the message
 	Mentions []string `json:"mentions,omitempty"`
-}
-
-func (r *PushMessageRequest) ValidateBody() bool {
-	var v interface{}
-	switch r.ContentType {
-	case types.ContentTypeText:
-		var m types.TextMessage
-		v = &m
-	case types.ContentTypeImage:
-		var m types.ImageMessage
-		v = &m
-	case types.ContentTypeLocation:
-		var m types.LocationMessage
-		v = &m
-	case types.ContentTypeAudio:
-		var m types.AudioMessage
-		v = &m
-	case types.ContentTypeVideo:
-		var m types.VideoMessage
-		v = &m
-	case types.ContentTypeFile:
-		var m types.FileMessage
-		v = &m
-	}
-	if err := jsoniter.Unmarshal(r.Body, v); err != nil {
-		return false
-	}
-	if err := validate.Struct(v); err != nil {
-		return false
-	}
-	return true
 }
 
 func (r *PushMessageRequest) Validate() bool {
 	if err := validate.Struct(r); err != nil {
 		return false
 	}
-	return r.ValidateBody()
+	return true
 }
 
 func (r *PushMessageRequest) Unmarshal(data []byte) error {

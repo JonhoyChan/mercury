@@ -53,7 +53,7 @@ func main() {
 		s := <-signalChan
 		switch s {
 		case syscall.SIGQUIT, syscall.SIGTERM, syscall.SIGINT:
-			log.Info("[ChatService] service shutdown")
+			log.Info("[MercuryLogic] service shutdown")
 			return
 		case syscall.SIGHUP:
 		default:
