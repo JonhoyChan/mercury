@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"outgoing/x"
+	"mercury/x"
 	"time"
 
 	"github.com/go-redis/redis/v7"

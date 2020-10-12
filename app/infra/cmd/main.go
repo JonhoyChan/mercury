@@ -2,14 +2,12 @@ package main
 
 import (
 	"flag"
+	"mercury/app/infra/config"
+	"mercury/app/infra/server/http"
+	"mercury/app/infra/service"
+	"mercury/x/log"
 	"os"
 	"os/signal"
-	"outgoing/app/infra/config"
-	"outgoing/app/infra/server/http"
-	"outgoing/app/infra/service"
-	"outgoing/x"
-	"outgoing/x/log"
-	"path/filepath"
 	"runtime"
 	"syscall"
 )
@@ -17,15 +15,7 @@ import (
 var configFile string
 
 func init() {
-	executable, _ := os.Executable()
-
-	// All relative paths are resolved against the executable path, not against current working directory.
-	// Absolute paths are left unchanged.
-	rootPath, _ := filepath.Split(executable)
-
-	path := x.ToAbsolutePath(rootPath, "mercury-infra.yml")
-
-	flag.StringVar(&configFile, "config", path, "Path to config file.")
+	flag.StringVar(&configFile, "config", ".config/mercury-infra.yml", "Path to config file.")
 }
 
 func main() {

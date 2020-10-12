@@ -1,26 +1,27 @@
 package config
 
 import (
-	"outgoing/x/config"
-
 	"github.com/spf13/viper"
+	"mercury/x/config"
 )
 
-func Init(configFile string) {
+const serviceName = "mercury-comet"
+
+func Init() {
 	v = viper.New()
-
-	// enable ability to specify configuration file via flag
-	v.SetConfigFile(configFile)
-
-	v.SetDefault(config.ViperKeyServiceName, "account.web")
+	v.SetDefault(config.ViperKeyServiceName, serviceName)
 	v.SetDefault(config.ViperKeyVersion, "latest")
 	v.SetDefault(config.ViperKeyRegisterTTL, "30s")
 	v.SetDefault(config.ViperKeyRegisterInterval, "15s")
 	v.SetDefault(config.ViperKeyHost, "0.0.0.0")
 	v.SetDefault(config.ViperKeyPort, 9000)
 
-	// If a configuration file is found, read it in.
-	if err := v.ReadInConfig(); err != nil {
-		panic("unable to found configuration file:" + err.Error())
+	data, err := config.LoadConfig(serviceName)
+	if err != nil {
+		panic("Unable to load config: " + err.Error())
+	}
+
+	for key, value := range data {
+		v.Set(key, value)
 	}
 }

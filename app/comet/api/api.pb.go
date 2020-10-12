@@ -165,9 +165,9 @@ func (m *BroadcastMessageReq) GetData() []byte {
 }
 
 func init() {
-	proto.RegisterType((*Empty)(nil), "outgoing.chat.comet.Empty")
-	proto.RegisterType((*PushMessageReq)(nil), "outgoing.chat.comet.PushMessageReq")
-	proto.RegisterType((*BroadcastMessageReq)(nil), "outgoing.chat.comet.BroadcastMessageReq")
+	proto.RegisterType((*Empty)(nil), "mercury.chat.comet.Empty")
+	proto.RegisterType((*PushMessageReq)(nil), "mercury.chat.comet.PushMessageReq")
+	proto.RegisterType((*BroadcastMessageReq)(nil), "mercury.chat.comet.BroadcastMessageReq")
 }
 
 func init() { proto.RegisterFile("api.proto", fileDescriptor_00212fb1f9d3bf1c) }

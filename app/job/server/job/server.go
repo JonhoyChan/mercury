@@ -6,9 +6,9 @@ import (
 	"github.com/micro/go-micro/v2/server"
 	"github.com/micro/go-plugins/broker/stan/v2"
 	"github.com/micro/go-plugins/registry/etcdv3/v2"
-	"outgoing/app/job/config"
-	"outgoing/app/job/service"
-	"outgoing/x"
+	"mercury/app/job/config"
+	"mercury/app/job/service"
+	"mercury/x"
 	"strings"
 )
 

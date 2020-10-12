@@ -1,37 +1,21 @@
 package main
 
 import (
-	"flag"
+	"mercury/app/logic/config"
+	"mercury/app/logic/server/grpc"
+	"mercury/app/logic/service"
+	"mercury/x/log"
 	"os"
 	"os/signal"
-	"outgoing/app/logic/config"
-	"outgoing/app/logic/server/grpc"
-	"outgoing/app/logic/service"
-	"outgoing/x"
-	"outgoing/x/log"
-	"path/filepath"
+	"runtime"
 	"syscall"
 )
 
-var configFile string
-
-func init() {
-	executable, _ := os.Executable()
-
-	// All relative paths are resolved against the executable path, not against current working directory.
-	// Absolute paths are left unchanged.
-	rootPath, _ := filepath.Split(executable)
-
-	path := x.ToAbsolutePath(rootPath, "mercury-logic.yml")
-
-	flag.StringVar(&configFile, "config", path, "Path to config file.")
-}
-
 func main() {
-	flag.Parse()
+	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Initialize configuration
-	config.Init(configFile)
+	config.Init()
 
 	c := config.NewViperProvider()
 

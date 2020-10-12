@@ -3,12 +3,12 @@ package service
 import (
 	"context"
 	jsoniter "github.com/json-iterator/go"
-	"outgoing/app/logic/api"
-	"outgoing/app/logic/persistence"
-	"outgoing/x"
-	"outgoing/x/database/redis"
-	"outgoing/x/ecode"
-	"outgoing/x/types"
+	"mercury/app/logic/api"
+	"mercury/app/logic/persistence"
+	"mercury/x"
+	"mercury/x/database/redis"
+	"mercury/x/ecode"
+	"mercury/x/types"
 )
 
 func (s *Service) nextSequence(ctx context.Context, topic string) (int64, error) {

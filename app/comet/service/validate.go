@@ -3,8 +3,8 @@ package service
 import (
 	"github.com/go-playground/validator/v10"
 	jsoniter "github.com/json-iterator/go"
-	"outgoing/x"
-	"outgoing/x/types"
+	"mercury/x"
+	"mercury/x/types"
 )
 
 var validate *validator.Validate

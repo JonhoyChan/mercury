@@ -3,10 +3,10 @@ package ginx
 import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
+	"mercury/x/ecode"
+	"mercury/x/log"
+	"mercury/x/stat"
 	"net/http/httputil"
-	"outgoing/x/ecode"
-	"outgoing/x/log"
-	"outgoing/x/stat"
 	"runtime"
 	"time"
 )

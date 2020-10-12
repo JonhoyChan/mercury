@@ -1,40 +1,22 @@
 package main
 
 import (
-	"flag"
+	"mercury/app/comet/config"
+	"mercury/app/comet/server/grpc"
+	"mercury/app/comet/server/http"
+	"mercury/app/comet/service"
+	"mercury/x/log"
 	"os"
 	"os/signal"
-	"outgoing/app/comet/config"
-	"outgoing/app/comet/server/grpc"
-	"outgoing/app/comet/server/http"
-	"outgoing/app/comet/service"
-	"outgoing/x"
-	"outgoing/x/log"
-	"path/filepath"
 	"runtime"
 	"syscall"
 )
 
-var configFile string
-
-func init() {
-	executable, _ := os.Executable()
-
-	// All relative paths are resolved against the executable path, not against current working directory.
-	// Absolute paths are left unchanged.
-	rootPath, _ := filepath.Split(executable)
-
-	path := x.ToAbsolutePath(rootPath, "mercury-comet.yml")
-
-	flag.StringVar(&configFile, "config", path, "Path to config file.")
-}
-
 func main() {
-	flag.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Initialize configuration
-	config.Init(configFile)
+	config.Init()
 
 	c := config.NewViperProvider()
 

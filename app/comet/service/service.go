@@ -2,10 +2,10 @@ package service
 
 import (
 	"context"
-	chatApi "outgoing/app/logic/api"
-	"outgoing/x/ecode"
-	"outgoing/x/log"
-	"outgoing/x/types"
+	chatApi "mercury/app/logic/api"
+	"mercury/x/ecode"
+	"mercury/x/log"
+	"mercury/x/types"
 
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/client/grpc"

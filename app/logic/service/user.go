@@ -2,9 +2,9 @@ package service
 
 import (
 	"context"
-	"outgoing/app/logic/api"
-	"outgoing/app/logic/persistence"
-	"outgoing/x/types"
+	"mercury/app/logic/api"
+	"mercury/app/logic/persistence"
+	"mercury/x/types"
 )
 
 func (s *Service) CreateUser(ctx context.Context, req *api.CreateUserReq) (string, error) {

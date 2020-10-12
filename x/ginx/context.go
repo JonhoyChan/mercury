@@ -2,8 +2,8 @@ package ginx
 
 import (
 	jsoniter "github.com/json-iterator/go"
+	"mercury/x/ecode"
 	"net/http"
-	"outgoing/x/ecode"
 	"strconv"
 
 	"github.com/gin-gonic/gin"

@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package outgoing.chat.comet;
+package mercury.chat.comet;
 option go_package = "api";
 option (gogoproto.marshaler_all) = true;
 

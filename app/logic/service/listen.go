@@ -1,8 +1,8 @@
 package service
 
 import (
-	"outgoing/app/logic/api"
-	"outgoing/x/types"
+	"mercury/app/logic/api"
+	"mercury/x/types"
 )
 
 func (s *Service) MessageListenerCount(clientID string) int {

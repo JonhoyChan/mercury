@@ -1,16 +1,16 @@
 package http
 
 import (
+	"mercury/app/comet/config"
+	"mercury/app/comet/service"
+	"mercury/app/comet/stats"
+	"mercury/x"
+	"mercury/x/ginx"
+	"mercury/x/log"
 	"net/http"
-	"outgoing/app/comet/config"
-	"outgoing/app/comet/service"
-	"outgoing/app/comet/stats"
-	"outgoing/x"
-	"outgoing/x/ginx"
-	"outgoing/x/log"
 	"strings"
 
-	"outgoing/x/websocket"
+	"mercury/x/websocket"
 
 	"github.com/gin-gonic/gin"
 	"github.com/micro/go-micro/v2/registry"

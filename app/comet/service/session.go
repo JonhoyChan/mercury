@@ -3,14 +3,14 @@ package service
 import (
 	"context"
 	jsoniter "github.com/json-iterator/go"
-	chatApi "outgoing/app/logic/api"
-	"outgoing/x"
-	"outgoing/x/ecode"
-	"outgoing/x/log"
-	"outgoing/x/types"
+	chatApi "mercury/app/logic/api"
+	"mercury/x"
+	"mercury/x/ecode"
+	"mercury/x/log"
+	"mercury/x/types"
 	"time"
 
-	"outgoing/x/websocket"
+	"mercury/x/websocket"
 )
 
 // Wire transport
@@ -243,7 +243,7 @@ func (s *Session) handshake(message *ServerMessage) []byte {
 	var req HandshakeRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
 		log.Warn("[Handshake] failed to deserialize", log.Ctx{"error": err, "sid": s.sid})
-		return ErrMalformed("", message.Timestamp)
+		return ErrBadRequest("", message.Timestamp)
 	}
 
 	if s.version == 0 {
@@ -289,7 +289,7 @@ func (s *Session) heartbeat(message *ServerMessage) []byte {
 	var req HeartbeatRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
 		log.Warn("[Heartbeat] failed to deserialize", "sid", s.sid, "error", err)
-		return ErrMalformed("", message.Timestamp)
+		return ErrBadRequest("", message.Timestamp)
 	}
 
 	if s.id.IsZero() {
@@ -308,7 +308,7 @@ func (s *Session) connect(message *ServerMessage) []byte {
 	var req ConnectRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
 		log.Warn("[Connect] failed to deserialize", "sid", s.sid, "error", err)
-		return ErrMalformed("", message.Timestamp)
+		return ErrBadRequest("", message.Timestamp)
 	}
 
 	clientID, uid, err := s.srv.connect(s.ctx, req.Token, s.sid, s.serverID)
@@ -331,7 +331,7 @@ func (s *Session) pushMessage(message *ServerMessage) []byte {
 	var req PushMessageRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
 		log.Warn("[PushMessage] failed to deserialize", "sid", s.sid, "error", err)
-		return ErrMalformed("", message.Timestamp)
+		return ErrBadRequest("", message.Timestamp)
 	}
 
 	if s.id.IsZero() {
@@ -364,7 +364,7 @@ func (s *Session) notification(message *ServerMessage) []byte {
 	var req NotificationRequest
 	if err := s.deserialize(&req, message.Data); err != nil {
 		log.Warn("[Notification] failed to deserialize", "sid", s.sid, "error", err)
-		return ErrMalformed("", message.Timestamp)
+		return ErrBadRequest("", message.Timestamp)
 	}
 
 	if s.id.IsZero() {

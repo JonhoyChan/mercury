@@ -1,9 +1,9 @@
 package cache
 
 import (
-	"outgoing/x"
-	"outgoing/x/database/redis"
-	"outgoing/x/ecode"
+	"mercury/x"
+	"mercury/x/database/redis"
+	"mercury/x/ecode"
 	"time"
 )
 

@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"outgoing/x/config"
+	"mercury/x/config"
 
 	"github.com/go-redis/redis/v7"
 )

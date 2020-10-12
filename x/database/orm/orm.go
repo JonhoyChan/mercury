@@ -1,9 +1,9 @@
 package orm
 
 import (
+	"mercury/x/config"
+	"mercury/x/log"
 	"time"
-	"outgoing/x/config"
-	"outgoing/x/log"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"

@@ -1,7 +1,7 @@
 package config
 
 import (
-	"outgoing/x/config"
+	"mercury/x/config"
 
 	"github.com/spf13/viper"
 )

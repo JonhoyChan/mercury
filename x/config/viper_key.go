@@ -23,6 +23,12 @@ const (
 	// log
 	ViperKeyLogMode = "log.mode"
 
+	// config
+	ViperKeyConfigPath = "config.path"
+
+	// repo
+	ViperKeyRepoPath = "repo.path"
+
 	// database
 	ViperKeyDatabaseDriver      = "database.driver"
 	ViperKeyDatabaseDSN         = "database.dsn"
@@ -55,4 +61,11 @@ const (
 	ViperKeyAuthenticatorTokenEnable = "authenticator.token.enable"
 	ViperKeyAuthenticatorTokenExpire = "authenticator.token.expire"
 	ViperKeyAuthenticatorTokenKey    = "authenticator.token.key"
+
+	// rpc
+	ViperKeyCometServiceName = "rpc_services.comet.service_name"
+
+	// topic
+	ViperKeyTopicPushMessage      = "topic.push_message"
+	ViperKeyTopicBroadcastMessage = "topic.broadcast_message"
 )

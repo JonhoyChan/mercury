@@ -3,7 +3,7 @@ package jwt
 import (
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
-	"outgoing/x/ecode"
+	"mercury/x/ecode"
 	"time"
 
 	"github.com/dgrijalva/jwt-go"

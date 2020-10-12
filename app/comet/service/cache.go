@@ -1,7 +1,7 @@
 package service
 
 import (
-	"outgoing/app/comet/stats"
+	"mercury/app/comet/stats"
 	"sync"
 )
 

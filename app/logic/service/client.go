@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"github.com/google/uuid"
-	"outgoing/app/logic/api"
-	"outgoing/app/logic/persistence"
-	"outgoing/x"
-	"outgoing/x/ecode"
+	"mercury/app/logic/api"
+	"mercury/app/logic/persistence"
+	"mercury/x"
+	"mercury/x/ecode"
 )
 
 func (s *Service) getClient(ctx context.Context, clientID string) (client *persistence.Client, err error) {

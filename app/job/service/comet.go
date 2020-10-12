@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 	"github.com/micro/go-micro/v2/client"
-	cApi "outgoing/app/comet/api"
-	"outgoing/x/log"
+	cApi "mercury/app/comet/api"
+	"mercury/x/log"
 	"sync/atomic"
 )
 

@@ -1,11 +1,11 @@
 package config
 
 import (
-	"outgoing/x/config"
+	"mercury/x/config"
 )
 
 type Provider interface {
 	config.DefaultProvider
-	ConfigPassphrase() string
 	ConfigPath() string
+	RepoPath() string
 }

@@ -1,6 +1,6 @@
 package persistence
 
-import "outgoing/x/types"
+import "mercury/x/types"
 
 type Message struct {
 	ID          int64

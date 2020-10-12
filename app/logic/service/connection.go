@@ -2,8 +2,8 @@ package service
 
 import (
 	"context"
-	"outgoing/app/logic/api"
-	"outgoing/x/ecode"
+	"mercury/app/logic/api"
+	"mercury/x/ecode"
 )
 
 func (s *Service) Connect(ctx context.Context, req *api.ConnectReq) (string, string, error) {

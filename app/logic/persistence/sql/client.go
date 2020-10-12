@@ -2,10 +2,10 @@ package sql
 
 import (
 	"context"
-	"outgoing/app/logic/persistence"
-	"outgoing/x"
-	"outgoing/x/database/sqlx"
-	"outgoing/x/ecode"
+	"mercury/app/logic/persistence"
+	"mercury/x"
+	"mercury/x/database/sqlx"
+	"mercury/x/ecode"
 	"strings"
 	"time"
 )

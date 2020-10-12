@@ -3,10 +3,10 @@ package service
 import (
 	"context"
 	"github.com/micro/go-micro/v2/broker"
-	cApi "outgoing/app/comet/api"
-	"outgoing/app/logic/api"
-	"outgoing/x/ecode"
-	"outgoing/x/log"
+	cApi "mercury/app/comet/api"
+	"mercury/app/logic/api"
+	"mercury/x/ecode"
+	"mercury/x/log"
 )
 
 func (s *Service) subscribePushMessage(e broker.Event) error {

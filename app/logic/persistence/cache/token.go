@@ -1,8 +1,8 @@
 package cache
 
 import (
-	"outgoing/x"
-	"outgoing/x/ecode"
+	"mercury/x"
+	"mercury/x/ecode"
 	"time"
 )
 

@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/argon2"
 
-	"outgoing/x/config"
+	"mercury/x/config"
 )
 
 var (

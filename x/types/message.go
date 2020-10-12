@@ -2,7 +2,7 @@ package types
 
 import (
 	"encoding/hex"
-	"outgoing/x/ecode"
+	"mercury/x/ecode"
 	"strings"
 )
 

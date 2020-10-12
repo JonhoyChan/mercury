@@ -4,8 +4,8 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"io"
-	"outgoing/x/config"
-	"outgoing/x/log"
+	"mercury/x/config"
+	"mercury/x/log"
 	"reflect"
 	"time"
 

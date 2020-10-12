@@ -3,7 +3,7 @@ package types
 import (
 	"encoding/base64"
 	"encoding/binary"
-	"outgoing/x/config"
+	"mercury/x/config"
 
 	"github.com/bwmarrin/snowflake"
 	"golang.org/x/crypto/xtea"

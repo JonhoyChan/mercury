@@ -3,17 +3,11 @@ package config
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"outgoing/x/config"
-	"outgoing/x/log"
+	"mercury/x/config"
+	"mercury/x/log"
 	"time"
 
 	"github.com/spf13/viper"
-)
-
-const (
-	viperKeyCometServiceName      = "rpc_services.comet.service_name"
-	viperKeyTopicPushMessage      = "topic.push_message"
-	viperKeyTopicBroadcastMessage = "topic.broadcast_message"
 )
 
 var v *viper.Viper
@@ -85,13 +79,13 @@ func (p *ViperProvider) Stan() *config.StanConfig {
 }
 
 func (p *ViperProvider) CometServiceName() string {
-	return v.GetString(viperKeyCometServiceName)
+	return v.GetString(config.ViperKeyCometServiceName)
 }
 
 func (p *ViperProvider) PushMessageTopic() string {
-	return v.GetString(viperKeyTopicPushMessage)
+	return v.GetString(config.ViperKeyTopicPushMessage)
 }
 
 func (p *ViperProvider) BroadcastMessageTopic() string {
-	return v.GetString(viperKeyTopicBroadcastMessage)
+	return v.GetString(config.ViperKeyTopicBroadcastMessage)
 }

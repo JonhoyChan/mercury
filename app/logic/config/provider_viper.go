@@ -2,15 +2,11 @@ package config
 
 import (
 	"fmt"
-	"outgoing/x/config"
-	"outgoing/x/log"
+	"mercury/x/config"
+	"mercury/x/log"
 	"time"
 
 	"github.com/spf13/viper"
-)
-
-const (
-	viperKeyTopicPushMessage = "topic.push_message"
 )
 
 var v *viper.Viper
@@ -126,5 +122,5 @@ func (p *ViperProvider) GeneratorID() *config.GeneratorIDConfig {
 }
 
 func (p *ViperProvider) PushMessageTopic() string {
-	return v.GetString(viperKeyTopicPushMessage)
+	return v.GetString(config.ViperKeyTopicPushMessage)
 }

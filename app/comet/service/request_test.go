@@ -2,7 +2,7 @@ package service
 
 import (
 	"github.com/stretchr/testify/require"
-	"outgoing/x/types"
+	"mercury/x/types"
 	"testing"
 )
 

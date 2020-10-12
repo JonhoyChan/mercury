@@ -1,7 +1,7 @@
 package hash
 
 import (
-	"outgoing/x/config"
+	"mercury/x/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"

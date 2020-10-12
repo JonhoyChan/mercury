@@ -1,6 +1,6 @@
 package stat
 
-import "outgoing/x/stat/prometheus"
+import "mercury/x/stat/prometheus"
 
 // Stat interface.
 type Stat interface {

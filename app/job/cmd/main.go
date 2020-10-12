@@ -1,39 +1,21 @@
 package main
 
 import (
-	"flag"
+	"mercury/app/job/config"
+	"mercury/app/job/server/job"
+	"mercury/app/job/service"
+	"mercury/x/log"
 	"os"
 	"os/signal"
-	"outgoing/app/job/config"
-	"outgoing/app/job/server/job"
-	"outgoing/app/job/service"
-	"outgoing/x"
-	"outgoing/x/log"
-	"path/filepath"
 	"runtime"
 	"syscall"
 )
 
-var configFile string
-
-func init() {
-	executable, _ := os.Executable()
-
-	// All relative paths are resolved against the executable path, not against current working directory.
-	// Absolute paths are left unchanged.
-	rootPath, _ := filepath.Split(executable)
-
-	path := x.ToAbsolutePath(rootPath, "mercury-job.yml")
-
-	flag.StringVar(&configFile, "config", path, "Path to config file.")
-}
-
 func main() {
-	flag.Parse()
 	runtime.GOMAXPROCS(runtime.NumCPU())
 
 	// Initialize configuration
-	config.Init(configFile)
+	config.Init()
 	c := config.NewViperProvider()
 
 	// Initialize log

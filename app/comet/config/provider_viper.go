@@ -3,8 +3,8 @@ package config
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"outgoing/x/config"
-	"outgoing/x/log"
+	"mercury/x/config"
+	"mercury/x/log"
 	"time"
 
 	"github.com/spf13/viper"

@@ -1,10 +1,10 @@
 package cache
 
 import (
-	"outgoing/app/logic/persistence"
-	"outgoing/x"
-	"outgoing/x/ecode"
-	"outgoing/x/rlp"
+	"mercury/app/logic/persistence"
+	"mercury/x"
+	"mercury/x/ecode"
+	"mercury/x/rlp"
 )
 
 var (

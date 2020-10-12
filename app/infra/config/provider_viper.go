@@ -3,16 +3,11 @@ package config
 import (
 	"fmt"
 	"github.com/google/uuid"
-	"outgoing/x/config"
-	"outgoing/x/log"
+	"mercury/x/config"
+	"mercury/x/log"
 	"time"
 
 	"github.com/spf13/viper"
-)
-
-const (
-	viperKeyConfigPassphrase = "config.passphrase"
-	viperKeyConfigPath       = "config.path"
 )
 
 var v *viper.Viper
@@ -67,9 +62,9 @@ func (p *ViperProvider) LogMode() string {
 }
 
 func (p *ViperProvider) ConfigPath() string {
-	return v.GetString(viperKeyConfigPath)
+	return v.GetString(config.ViperKeyConfigPath)
 }
 
-func (p *ViperProvider) ConfigPassphrase() string {
-	return v.GetString(viperKeyConfigPassphrase)
+func (p *ViperProvider) RepoPath() string {
+	return v.GetString(config.ViperKeyRepoPath)
 }

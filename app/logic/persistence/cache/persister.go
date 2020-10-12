@@ -1,7 +1,7 @@
 package cache
 
 import (
-	"outgoing/x/database/redis"
+	"mercury/x/database/redis"
 )
 
 type Cache struct {

@@ -1,7 +1,7 @@
 package entity
 
 import (
-	"outgoing/x/types"
+	"mercury/x/types"
 )
 
 type Client struct {

@@ -2,11 +2,11 @@ package service
 
 import (
 	"context"
-	"outgoing/x"
-	"outgoing/x/ecode"
-	"outgoing/x/ksuid"
-	"outgoing/x/log"
-	"outgoing/x/websocket"
+	"mercury/x"
+	"mercury/x/ecode"
+	"mercury/x/ksuid"
+	"mercury/x/log"
+	"mercury/x/websocket"
 )
 
 type SessionStore interface {

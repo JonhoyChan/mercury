@@ -15,7 +15,7 @@ import (
 	"testing/iotest"
 	"time"
 
-	. "outgoing/x/bufio"
+	. "mercury/x/bufio"
 )
 
 // Reads from a reader and rot13s the result.

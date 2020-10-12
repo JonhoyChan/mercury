@@ -6,11 +6,11 @@ import "strings"
 func PlatformFromUA(ua string) string {
 	ua = strings.ToLower(ua)
 	switch {
-	case strings.Contains(ua, "outgoing-js"):
+	case strings.Contains(ua, "mercury-js"):
 		return "web"
-	case strings.Contains(ua, "outgoing-android"):
+	case strings.Contains(ua, "mercury-android"):
 		return "android"
-	case strings.Contains(ua, "outgoing-ios"):
+	case strings.Contains(ua, "mercury-ios"):
 		return "ios"
 	default:
 		switch {

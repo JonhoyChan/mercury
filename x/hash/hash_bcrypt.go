@@ -3,7 +3,7 @@ package hash
 import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
-	"outgoing/x/config"
+	"mercury/x/config"
 )
 
 const defaultBCryptCost = 12

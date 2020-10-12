@@ -1,7 +1,7 @@
 package config
 
 import (
-	"outgoing/x/config"
+	"mercury/x/config"
 )
 
 type Provider interface {

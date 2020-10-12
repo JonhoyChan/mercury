@@ -1,7 +1,7 @@
 package config
 
 import (
-	"outgoing/x/log"
+	"mercury/x/log"
 	"time"
 )
 

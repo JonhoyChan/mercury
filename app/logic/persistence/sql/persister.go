@@ -1,8 +1,8 @@
 package sql
 
 import (
-	"outgoing/app/logic/persistence"
-	"outgoing/x/database/sqlx"
+	"mercury/app/logic/persistence"
+	"mercury/x/database/sqlx"
 )
 
 type Persister struct {

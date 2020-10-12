@@ -5,8 +5,8 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/client/grpc"
 	"github.com/stretchr/testify/require"
-	"outgoing/app/logic/api"
-	"outgoing/x/ecode"
+	"mercury/app/logic/api"
+	"mercury/x/ecode"
 	"testing"
 	"time"
 )

@@ -2,7 +2,7 @@ package service
 
 import (
 	jsoniter "github.com/json-iterator/go"
-	"outgoing/x/ecode"
+	"mercury/x/ecode"
 )
 
 type Response struct {
@@ -54,6 +54,12 @@ func NoErr(mid string, timestamp int64, data interface{}) []byte {
 // NoErrShutdown means user was disconnected from topic because system shutdown is in progress.
 func NoErrShutdown() []byte {
 	resp, _ := NewResponse(ecode.ResetContent.ResetMessage("server shutdown"), "", 0, nil).Marshal()
+	return resp
+}
+
+// ErrMalformed bad request.
+func ErrBadRequest(mid string, timestamp int64) []byte {
+	resp, _ := NewResponse(ecode.ErrBadRequest, mid, timestamp, nil).Marshal()
 	return resp
 }
 
