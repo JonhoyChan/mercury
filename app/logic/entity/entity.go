@@ -84,18 +84,3 @@ type Message struct {
 	// List of user IDs mentioned in the message
 	Mentions string `gorm:"column:mentions"`
 }
-
-type ChannelMessage struct {
-	ID        int64 `gorm:"primary_key;column:id"`
-	CreatedAt int64 `gorm:"column:created_at"`
-	UpdatedAt int64 `gorm:"column:updated_at"`
-	ChannelID int64 `gorm:"column:channel_id"`
-	Sequence  int64 `gorm:"column:sequence"`
-	Sender    int64 `gorm:"column:sender"`
-	// Message content type. e.g. {"content": "Hello, World!". "content_type": 10}
-	ContentType types.ContentType `gorm:"type:SMALLINT;column:content_type"`
-	// The body of the message, will change according to the content type
-	Body string `gorm:"type:JSON;column:body"`
-	// The status of the message. e.g. (0: normal, 3:deleted)
-	Status uint8 `gorm:"not null;type:SMALLINT;column:status"`
-}

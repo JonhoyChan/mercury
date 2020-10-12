@@ -5,7 +5,6 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/micro/go-micro/v2/broker"
 	"github.com/micro/go-micro/v2/server"
-	"github.com/panjf2000/ants/v2"
 	"github.com/pkg/errors"
 	"mercury/app/logic/auth/jwt"
 	"mercury/app/logic/auth/token"
@@ -36,20 +35,19 @@ type Service struct {
 
 	idGen types.IDGenerator
 
-	antsPool *ants.PoolWithFunc
-
-	messageChan map[string]chan *types.Message
-
-	doneChan chan struct{}
+	messageChan       map[string]chan *types.Message
+	brokerMessageChan chan *PublishMessage
+	doneChan          chan struct{}
 }
 
 func NewService(c config.Provider) (*Service, error) {
 	s := &Service{
-		config:      c,
-		log:         c.Logger(),
-		hash:        hash.NewHasherBCrypt(c),
-		messageChan: make(map[string]chan *types.Message),
-		doneChan:    make(chan struct{}),
+		config:            c,
+		log:               c.Logger(),
+		hash:              hash.NewHasherBCrypt(c),
+		messageChan:       make(map[string]chan *types.Message),
+		brokerMessageChan: make(chan *PublishMessage, 4096),
+		doneChan:          make(chan struct{}),
 	}
 
 	err := s.withTokenAuthenticator()
@@ -72,11 +70,8 @@ func NewService(c config.Provider) (*Service, error) {
 	if err != nil {
 		return nil, err
 	}
-	err = s.withAntsPool()
-	if err != nil {
-		return nil, err
-	}
 
+	go s.process()
 	return s, nil
 }
 
@@ -91,15 +86,29 @@ func (s *Service) Close() error {
 			return err
 		}
 	}
-	if s.antsPool != nil {
-		s.antsPool.Release()
-	}
 	s.doneChan <- struct{}{}
 	close(s.doneChan)
 	for _, c := range s.messageChan {
 		close(c)
 	}
 	return nil
+}
+
+func (s *Service) process() {
+	for {
+		select {
+		case m := <-s.brokerMessageChan:
+			if err := broker.Publish(m.Topic, m.Message); err != nil {
+				s.log.Error("failed to publish message", "error", err)
+				return
+			}
+		case <-s.doneChan:
+			close(s.brokerMessageChan)
+			if err := broker.Disconnect(); err != nil {
+				s.log.Warn("failed to disconnecting broker", "error", err)
+			}
+		}
+	}
 }
 
 func (s *Service) withTokenAuthenticator() error {
@@ -171,15 +180,6 @@ func (s *Service) withIDGenerator() error {
 	return nil
 }
 
-func (s *Service) withAntsPool() error {
-	var err error
-	s.antsPool, err = ants.NewPoolWithFunc(100000, s.publish)
-	if err != nil {
-		return err
-	}
-	return nil
-}
-
 type PublishMessage struct {
 	Topic   string
 	Message *broker.Message
@@ -215,11 +215,7 @@ func (s *Service) invoke(topic string, m marshaler) error {
 		},
 	}
 
-	if err := s.antsPool.Invoke(pm); err != nil {
-		s.log.Error("failed to pool invoke", "error", err)
-		return err
-	}
-
+	s.brokerMessageChan <- pm
 	return nil
 }
 

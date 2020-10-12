@@ -115,7 +115,7 @@ type NotificationRequest struct {
 	MID      string         `json:"mid,omitempty"`
 	What     types.WhatType `json:"what"`
 	Topic    string         `json:"topic" validate:"required"`
-	Sequence int64          `json:"sequence,int64,omitempty"`
+	Sequence int64          `json:"sequence,omitempty"`
 }
 
 func (r *NotificationRequest) Validate() bool {

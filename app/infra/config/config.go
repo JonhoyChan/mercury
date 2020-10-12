@@ -6,13 +6,15 @@ import (
 	"github.com/spf13/viper"
 )
 
+const serviceName = "mercury-infra"
+
 func Init(configFile string) {
 	v = viper.New()
 
 	// enable ability to specify configuration file via flag
 	v.SetConfigFile(configFile)
 
-	v.SetDefault(config.ViperKeyServiceName, "mercury.infra")
+	v.SetDefault(config.ViperKeyServiceName, serviceName)
 	v.SetDefault(config.ViperKeyVersion, "latest")
 	v.SetDefault(config.ViperKeyRegisterTTL, "30s")
 	v.SetDefault(config.ViperKeyRegisterInterval, "15s")

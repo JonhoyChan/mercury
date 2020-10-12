@@ -2,18 +2,15 @@ package grpc
 
 import (
 	"context"
-	"github.com/micro/go-micro/v2/registry"
 	"github.com/micro/go-micro/v2/server"
 	"github.com/micro/go-micro/v2/server/grpc"
-	"github.com/micro/go-plugins/registry/etcdv3/v2"
 	"mercury/app/comet/api"
 	"mercury/app/comet/config"
 	"mercury/app/comet/service"
-	"mercury/x"
 	"mercury/x/ecode"
 	"mercury/x/log"
+	"mercury/x/microx"
 	"mercury/x/types"
-	"strings"
 )
 
 type grpcServer struct {
@@ -23,31 +20,9 @@ type grpcServer struct {
 
 // 注册服务
 func Init(c config.Provider, srv *service.Service) {
-	opts := []server.Option{
-		server.Id(c.ID()),
-		server.Name(c.Name()),
-		server.Version(c.Version()),
-		server.RegisterTTL(c.RegisterTTL()),
-		server.RegisterInterval(c.RegisterInterval()),
-		server.Address(c.RPCAddress()),
-	}
-
-	if c.Etcd().Enable {
-		etcdv3Registry := etcdv3.NewRegistry(func(op *registry.Options) {
-			var addresses []string
-			for _, v := range c.Etcd().Addresses {
-				v = strings.TrimSpace(v)
-				addresses = append(addresses, x.ReplaceHttpOrHttps(v))
-			}
-
-			op.Addrs = addresses
-		})
-		opts = append(opts, server.Registry(etcdv3Registry))
-	}
-
-	opts = append(opts, server.WrapHandler(ecode.MicroHandlerFunc))
+	opts := append(microx.InitServerOptionsWithoutBroker(c), server.Id(c.ID()), server.WrapHandler(ecode.MicroHandlerFunc))
 	microServer := grpc.NewServer(opts...)
-	if err := microServer.Init(); err != nil {
+	if err := microServer.Init(server.Address(c.RPCAddress())); err != nil {
 		panic("unable to initialize server:" + err.Error())
 	}
 
@@ -72,7 +47,7 @@ func (s *grpcServer) PushMessage(ctx context.Context, req *api.PushMessageReq, r
 	for _, sid := range req.SIDs {
 		session := s.srv.SessionStore.Get(sid)
 		if session != nil {
-			go session.QueueOut(types.OperationPush, req.Data)
+			go session.QueueOut(types.Operation(req.Operation), req.Data)
 		}
 	}
 	return nil

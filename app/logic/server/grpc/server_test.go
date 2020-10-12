@@ -103,8 +103,8 @@ func TestGrpcServer_User(t *testing.T) {
 
 	t.Run("Generate user token", func(t *testing.T) {
 		resp, err := apiAdminClient.GenerateUserToken(ctx, &api.GenerateUserTokenReq{
-			Token: "7b2245787069726573223a313630303136353338362c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227d1c249a99733d0ae591455211e62a4fa9843018d84ff583785c61a7a396343995",
-			UID:   "uid7KA8fY5Jb3A",
+			Token: "7b2245787069726573223a313630333730333031322c2244617461223a22597a526d5a6a526a59546b744e6d59795a6930305a6d52694c5467304f4445744f4451324d474d7a59574e6c4d324977227dd3a76fd7edac25c916cf2b0e61a85a4b25fd64c3cf3a1ef9f017ce00e8e78720",
+			UID:   "uidOwbRDvaLyaw",
 		})
 		require.Nil(t, err)
 
@@ -205,7 +205,7 @@ func TestGrpcServer_Group(t *testing.T) {
 func TestGrpcServer_PullMessage(t *testing.T) {
 	t.Run("pull message", func(t *testing.T) {
 		resp, err := apiClient.PullMessage(ctx, &api.PullMessageReq{
-			UID: "uid7KA8fY5Jb3A",
+			UID: "uiduN_f_2oWkUQ",
 		})
 		require.Nil(t, err)
 

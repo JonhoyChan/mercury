@@ -5,6 +5,7 @@ import (
 	"github.com/micro/go-micro/v2/client"
 	"github.com/micro/go-micro/v2/client/grpc"
 	"github.com/micro/go-micro/v2/registry"
+	"github.com/micro/go-micro/v2/server"
 	cApi "mercury/app/comet/api"
 	"mercury/app/job/config"
 	"mercury/x/ecode"
@@ -36,11 +37,17 @@ func NewService(config config.Provider) *Service {
 	}
 }
 
-func (s *Service) WithRegistry(r registry.Registry) {
+func (s *Service) Init(options server.Options) {
+	s.withRegistry(options.Registry)
+	s.withBroker(options.Broker)
+}
+
+func (s *Service) withRegistry(r registry.Registry) {
 	if s.registry == nil {
 		s.registry = r
 
 		opts := []client.Option{
+			client.RequestTimeout(10 * time.Second),
 			client.Retries(2),
 			client.Retry(ecode.RetryOnMicroError),
 			client.WrapCall(ecode.MicroCallFunc),
@@ -50,10 +57,12 @@ func (s *Service) WithRegistry(r registry.Registry) {
 		c := grpc.NewClient(opts...)
 
 		grpcClient = cApi.NewChatService(s.config.CometServiceName(), c)
+
+		go s.watchComet()
 	}
 }
 
-func (s *Service) WithBroker(b broker.Broker) {
+func (s *Service) withBroker(b broker.Broker) {
 	if s.broker == nil {
 		s.broker = b
 
@@ -76,11 +85,7 @@ func (s *Service) Close() {
 	s.stopChan <- struct{}{}
 }
 
-func (s *Service) WatchComet() {
-	if s.registry == nil {
-		panic("registry is nil, please use the WithRegistry first")
-	}
-
+func (s *Service) watchComet() {
 	if err := s.syncCometNodes(); err != nil {
 		panic("failed to sync comet nodes:" + err.Error())
 	}

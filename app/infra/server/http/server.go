@@ -10,6 +10,7 @@ import (
 	"mercury/x/ecode"
 	"mercury/x/ginx"
 	"mercury/x/log"
+	"mercury/x/microx"
 	"net/http"
 	"time"
 
@@ -25,17 +26,7 @@ type httpServer struct {
 }
 
 func Init(c config.Provider, srv *service.Service) {
-	opts := []web.Option{
-		web.Name(c.Name()),
-		web.Version(c.Version()),
-		web.RegisterTTL(c.RegisterTTL()),
-		web.RegisterInterval(c.RegisterInterval()),
-		web.Address(c.Address()),
-	}
-
-	microWeb := web.NewService(opts...)
-
-	// Initialize service
+	microWeb := web.NewService(microx.InitDefaultWebOptions(c)...)
 	if err := microWeb.Init(); err != nil {
 		panic("unable to initialize service:" + err.Error())
 	}
@@ -121,7 +112,7 @@ func (s *httpServer) uploadFile(c *ginx.Context) {
 			return
 		}
 		c.Success(resp)
-	case "mp4":
+	case "mp4": // FIXME
 		resp, err := s.srv.AddVideos(data, file.Filename)
 		if err != nil {
 			s.l.Error("[uploadFile] failed to add video", "error", err)
@@ -130,6 +121,7 @@ func (s *httpServer) uploadFile(c *ginx.Context) {
 		}
 		c.Success(resp)
 	default:
+		// FIXME
 		resp, err := s.srv.AddVideos(data, file.Filename)
 		if err != nil {
 			s.l.Error("[uploadFile] failed to add video", "error", err)

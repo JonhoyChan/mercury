@@ -47,7 +47,6 @@ func NewService(c config.Provider) (*Service, error) {
 	if err := s.setupIPFS(); err != nil {
 		return nil, err
 	}
-
 	return s, nil
 }
 
@@ -81,7 +80,6 @@ var swarmKey = `
 /key/swarm/psk/1.0.0/
 /base16/
 64d5790c69567320e975b7e6e594b6c7f7d297746d0401070ab52739fdcf2fd8
-
 `
 
 func writeSwarmKey(dir string) error {
@@ -102,34 +100,6 @@ func writeSwarmKey(dir string) error {
 	return nil
 
 }
-
-//func checkWriteable(dir string) error {
-//	_, err := os.Stat(dir)
-//	if err == nil {
-//		// Directory exists, make sure we can write to it
-//		testfile := path.Join(dir, "test")
-//		f, err := os.Create(testfile)
-//		if err != nil {
-//			if os.IsPermission(err) {
-//				return fmt.Errorf("%s is not writeable by the current user", dir)
-//			}
-//			return fmt.Errorf("unexpected error while checking writeablility of repo root: %s", err)
-//		}
-//		_ = f.Close()
-//		return os.Remove(testfile)
-//	}
-//
-//	if os.IsNotExist(err) {
-//		// Directory does not exist, check that we can create it
-//		return os.Mkdir(dir, 0775)
-//	}
-//
-//	if os.IsPermission(err) {
-//		return fmt.Errorf("cannot write to %s, incorrect permissions", err)
-//	}
-//
-//	return err
-//}
 
 func (s *Service) setupIPFS() error {
 	if s.ipfsNode == nil && s.repoRoot == "" {
@@ -162,7 +132,6 @@ func (s *Service) setupIPFS() error {
 
 		s.ipfsNode = node
 		s.repoRoot = repoPath
-
 		if s.ipfsNode.PNetFingerprint != nil {
 			log.Info("Swarm is limited to private network of peers with the swarm key", "fingerprint", x.Sprintf("%x", s.ipfsNode.PNetFingerprint))
 		}
@@ -247,7 +216,6 @@ func (s *Service) AddVideos(videoData []byte, filename string) (*model.ProfileVi
 	if err != nil {
 		return nil, err
 	}
-
 	return &model.ProfileVideo{Original: original}, nil
 }
 
@@ -266,27 +234,5 @@ func (s *Service) CatFile(hash string) ([]byte, error) {
 	if err != nil {
 		return nil, ecode.ErrDataDoesNotExist
 	}
-
-	//reader := bytes.NewReader(data)
-	//img, imgType, err := image.Decode(reader)
-	//if err != nil {
-	//	return nil, err
-	//}
-	//
-	//buffer := bytes.NewBuffer(make([]byte, 0))
-	//if imgType == "jpg" || imgType == "jpeg" {
-	//	err = jpeg.Encode(buffer, img, nil)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	data = buffer.Bytes()
-	//} else if imgType == "png" {
-	//	err = png.Encode(buffer, img)
-	//	if err != nil {
-	//		return nil, err
-	//	}
-	//	data = buffer.Bytes()
-	//}
-
 	return data, nil
 }

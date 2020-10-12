@@ -26,7 +26,7 @@ func (c *Cache) GetUserTopicLastSequence(uid, topic string) (int64, error) {
 
 func (c *Cache) GetUserTopicsLastSequence(uid string) (map[string]int64, error) {
 	topics := make(map[string]int64)
-	result, err := c.client.HGetAll(x.Sprintf(userSessionServerKey, uid)).Result()
+	result, err := c.client.HGetAll(x.Sprintf(userTopicSequenceKey, uid)).Result()
 	if err != nil {
 		return nil, err
 	}

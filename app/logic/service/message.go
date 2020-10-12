@@ -136,13 +136,13 @@ func (s *Service) PushMessage(ctx context.Context, req *api.PushMessageReq) (int
 					Body:        req.Body,
 					Mentions:    req.Mentions,
 				}
-				go s.send(m, req.SID, uids...)
+				go s.send(types.OperationPush, m, req.SID, uids...)
 				if len(req.Mentions) > 0 {
 					n := &types.Notification{
 						Topic: topic,
 						What:  types.WhatTypeMentioned,
 					}
-					go s.send(n, "", req.Mentions...)
+					go s.send(types.OperationNotification, n, "", req.Mentions...)
 				}
 				go s.cache.SetUserTopicLastSequence(sender.UID(), message.Topic, message.Sequence)
 
@@ -238,7 +238,7 @@ func (s *Service) ReadMessage(ctx context.Context, req *api.ReadMessageReq) erro
 			MessageID: message.ID,
 		}
 		sender := s.EncodeID(message.Sender).UID()
-		go s.send(n, "", sender)
+		go s.send(types.OperationNotification, n, "", sender)
 	}
 
 	return nil
@@ -263,12 +263,12 @@ func (s *Service) Keypress(ctx context.Context, req *api.KeypressReq) error {
 		Topic: req.Topic,
 		What:  types.WhatTypeKeypress,
 	}
-	go s.send(n, "", to.UID())
+	go s.send(types.OperationNotification, n, "", to.UID())
 
 	return nil
 }
 
-func (s *Service) send(v interface{}, skipSID string, uids ...string) {
+func (s *Service) send(op types.Operation, v interface{}, skipSID string, uids ...string) {
 	sessions, _, err := s.cache.GetSessions(uids...)
 	if err != nil {
 		s.log.Warn("[Send] failed to get sessions", "error", err)
@@ -296,9 +296,10 @@ func (s *Service) send(v interface{}, skipSID string, uids ...string) {
 		topic := s.config.PushMessageTopic()
 		for serverID, sids := range servers {
 			if err := s.invoke(topic, &api.PushMessage{
-				ServerID: serverID,
-				SIDs:     sids,
-				Data:     data,
+				Operation: int32(op),
+				ServerID:  serverID,
+				SIDs:      sids,
+				Data:      data,
 			}); err != nil {
 				s.log.Warn("[Send] failed to invoke", "serverID", serverID, "error", err)
 			}

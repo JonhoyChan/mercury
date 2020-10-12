@@ -4,18 +4,14 @@ import (
 	"mercury/app/comet/config"
 	"mercury/app/comet/service"
 	"mercury/app/comet/stats"
-	"mercury/x"
 	"mercury/x/ginx"
 	"mercury/x/log"
-	"net/http"
-	"strings"
-
+	"mercury/x/microx"
 	"mercury/x/websocket"
+	"net/http"
 
 	"github.com/gin-gonic/gin"
-	"github.com/micro/go-micro/v2/registry"
 	"github.com/micro/go-micro/v2/web"
-	"github.com/micro/go-plugins/registry/etcdv3/v2"
 )
 
 type httpServer struct {
@@ -26,28 +22,7 @@ type httpServer struct {
 }
 
 func Init(c config.Provider, srv *service.Service) {
-	opts := []web.Option{
-		web.Id(c.ID()),
-		web.Name(c.Name()),
-		web.Version(c.Version()),
-		web.RegisterTTL(c.RegisterTTL()),
-		web.RegisterInterval(c.RegisterInterval()),
-		web.Address(c.Address()),
-	}
-
-	if c.Etcd().Enable {
-		etcdv3Registry := etcdv3.NewRegistry(func(op *registry.Options) {
-			var addresses []string
-			for _, v := range c.Etcd().Addresses {
-				v = strings.TrimSpace(v)
-				addresses = append(addresses, x.ReplaceHttpOrHttps(v))
-			}
-
-			op.Addrs = addresses
-		})
-		opts = append(opts, web.Registry(etcdv3Registry))
-	}
-
+	opts := append(microx.InitWebOptionsWithoutBroker(c), web.Id(c.ID()))
 	microWeb := web.NewService(opts...)
 
 	// Initialize service

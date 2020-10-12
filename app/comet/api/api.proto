@@ -9,8 +9,9 @@ import "github.com/gogo/protobuf/gogoproto/gogo.proto";
 message Empty{}
 
 message PushMessageReq {
-    repeated string sids = 1  [(gogoproto.customname) = "SIDs"];
-    bytes data = 2;
+    int32 operation = 1;
+    repeated string sids = 2  [(gogoproto.customname) = "SIDs"];
+    bytes data = 3;
 }
 
 message BroadcastMessageReq {
