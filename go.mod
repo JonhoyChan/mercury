@@ -11,7 +11,9 @@ require (
 	github.com/coreos/go-systemd v0.0.0-20191104093116-d3cd4ed1dbcf // indirect
 	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/disintegration/imaging v1.6.2
+	github.com/fatih/color v1.9.0
 	github.com/fsnotify/fsnotify v1.4.9
+	github.com/ghodss/yaml v1.0.0
 	github.com/gin-contrib/cors v1.3.1
 	github.com/gin-gonic/gin v1.6.3
 	github.com/go-errors/errors v1.0.1
@@ -23,17 +25,23 @@ require (
 	github.com/google/go-cmp v0.5.1 // indirect
 	github.com/google/uuid v1.1.2
 	github.com/gorilla/websocket v1.4.2
+	github.com/h2non/filetype v1.1.0
 	github.com/hashicorp/golang-lru v0.5.4
 	github.com/imdario/mergo v0.3.11 // indirect
+	github.com/ipfs/go-block-format v0.0.2
 	github.com/ipfs/go-cid v0.0.7
 	github.com/ipfs/go-datastore v0.4.5
 	github.com/ipfs/go-ipfs v0.7.0
+	github.com/ipfs/go-ipfs-api v0.2.0
+	github.com/ipfs/go-ipfs-cmds v0.4.0
 	github.com/ipfs/go-ipfs-config v0.9.0
 	github.com/ipfs/go-ipfs-files v0.0.8
 	github.com/ipfs/go-ipfs-util v0.0.2
+	github.com/ipfs/go-ipld-format v0.2.0
 	github.com/ipfs/go-ipns v0.0.2
 	github.com/ipfs/go-merkledag v0.3.2
 	github.com/ipfs/go-path v0.0.8
+	github.com/ipfs/go-unixfs v0.2.4
 	github.com/ipfs/interface-go-ipfs-core v0.4.0
 	github.com/jinzhu/gorm v1.9.16
 	github.com/json-iterator/go v1.1.10
@@ -50,6 +58,7 @@ require (
 	github.com/micro/go-plugins/wrapper/ratelimiter/uber/v2 v2.8.0
 	github.com/mitchellh/go-homedir v1.1.0
 	github.com/multiformats/go-multiaddr v0.3.1
+	github.com/multiformats/go-multiaddr-net v0.2.0
 	github.com/multiformats/go-multihash v0.0.14
 	github.com/nats-io/jwt v1.0.1 // indirect
 	github.com/nats-io/nats.go v1.10.0 // indirect
@@ -58,6 +67,7 @@ require (
 	github.com/panjf2000/ants/v2 v2.4.2
 	github.com/pkg/errors v0.9.1
 	github.com/prometheus/client_golang v1.7.1
+	github.com/spf13/cobra v0.0.5
 	github.com/spf13/viper v1.7.1
 	github.com/stretchr/testify v1.6.1
 	github.com/tyler-smith/go-bip39 v1.0.2
@@ -66,7 +76,7 @@ require (
 	golang.org/x/crypto v0.0.0-20200820211705-5c72a883971a
 	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
 	golang.org/x/net v0.0.0-20200822124328-c89045814202
-	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a // indirect
+	golang.org/x/sys v0.0.0-20200831180312-196b9ba8737a
 	golang.org/x/text v0.3.3 // indirect
 	golang.org/x/tools v0.0.0-20200902012652-d1954cc86c82 // indirect
 	google.golang.org/grpc v1.27.1

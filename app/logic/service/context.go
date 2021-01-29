@@ -4,30 +4,20 @@ import (
 	"context"
 )
 
-const (
-	clientContextKey = "client"
-)
+type clientKey struct{}
 
-func (s *Service) SetContextClient(ctx context.Context, clientID string) context.Context {
-	return context.WithValue(ctx, clientContextKey, clientID)
+func ClientIDFromContext(ctx context.Context) (string, bool) {
+	id, ok := ctx.Value(clientKey{}).(string)
+	return id, ok
 }
 
-func (s *Service) GetContext(ctx context.Context, key string) (string, bool) {
-	value := ctx.Value(key)
-	if value == nil {
-		return "", false
-	}
-	id, ok := value.(string)
-	if !ok {
-		return "", false
-	}
-
-	return id, true
+func ContextWithClientID(ctx context.Context, clientID string) context.Context {
+	return context.WithValue(ctx, clientKey{}, clientID)
 }
 
-func (s *Service) MustGetContextClient(ctx context.Context) string {
-	if value, exists := s.GetContext(ctx, clientContextKey); exists {
+func MustClientIDFromContext(ctx context.Context) string {
+	if value, exists := ClientIDFromContext(ctx); exists {
 		return value
 	}
-	panic("Key \"" + clientContextKey + "\" does not exist")
+	panic("client id does not exist")
 }

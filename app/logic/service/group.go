@@ -8,9 +8,7 @@ import (
 )
 
 func (s *Service) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (*api.Group, error) {
-	s.log.Info("[CreateGroup] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	id := s.idGen.Get()
 	in := &persistence.GroupCreate{
 		ClientID:     clientID,
@@ -39,9 +37,7 @@ func (s *Service) CreateGroup(ctx context.Context, req *api.CreateGroupReq) (*ap
 }
 
 func (s *Service) GetGroups(ctx context.Context, uid string) ([]*api.Group, error) {
-	s.log.Info("[GetGroups] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	groups, err := s.persister.Group().GetGroups(ctx, s.DecodeID(types.ParseUID(uid)))
 	if err != nil {
 		s.log.Error("[GetGroups] failed to get groups", "client_id", clientID, "uid", uid, "error", err)
@@ -65,9 +61,7 @@ func (s *Service) GetGroups(ctx context.Context, uid string) ([]*api.Group, erro
 }
 
 func (s *Service) AddMember(ctx context.Context, req *api.AddMemberReq) error {
-	s.log.Info("[AddMember] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	in := &persistence.GroupMember{
 		ClientID: clientID,
 		GroupID:  s.idGen.DecodeID(types.ParseGID(req.GID)),
@@ -86,9 +80,7 @@ func (s *Service) AddMember(ctx context.Context, req *api.AddMemberReq) error {
 }
 
 func (s *Service) GetMembers(ctx context.Context, gid string) ([]string, error) {
-	s.log.Info("[GetMembers] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	memberIDs, err := s.persister.Group().GetMembers(ctx, clientID, s.DecodeID(types.ParseGID(gid)))
 	if err != nil {
 		s.log.Error("[GetMembers] failed to get group members", "gid", gid, "error", err)

@@ -53,10 +53,11 @@ func (p *clientPersister) GetClientCredential(_ context.Context, id string) (str
 
 func (p *clientPersister) GetClient(_ context.Context, id string) (*persistence.Client, error) {
 	var (
-		name, tokenSecret string
-		tokenExpire       int64
+		name, tokenSecret                                        string
+		createdAt, updatedAt, tokenExpire, userCount, groupCount int64
 	)
-	if err := p.db.QueryRow("SELECT name, token_expire, token_secret FROM client WHERE id = $1;", id).Scan(&name, &tokenExpire, &tokenSecret); sqlx.IsErrNoRows(err) {
+	if err := p.db.QueryRow("SELECT created_at, updated_at, name, token_expire, token_secret, user_count, group_count FROM client WHERE id = $1;", id).
+		Scan(&createdAt, &updatedAt, &name, &tokenExpire, &tokenSecret, &userCount, &groupCount); sqlx.IsErrNoRows(err) {
 		return nil, ecode.ErrDataDoesNotExist
 	} else if err != nil {
 		return nil, err
@@ -64,9 +65,13 @@ func (p *clientPersister) GetClient(_ context.Context, id string) (*persistence.
 
 	return &persistence.Client{
 		ID:          id,
+		CreatedAt:   createdAt,
+		UpdatedAt:   updatedAt,
 		Name:        name,
 		TokenSecret: []byte(tokenSecret),
 		TokenExpire: time.Duration(tokenExpire) * time.Second,
+		UserCount:   userCount,
+		GroupCount:  groupCount,
 	}, nil
 }
 

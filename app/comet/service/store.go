@@ -10,7 +10,7 @@ import (
 )
 
 type SessionStore interface {
-	NewSession(ctx context.Context, conn interface{}, serverID string, srv *Service) error
+	NewSession(ctx context.Context, conn interface{}, serverID string, srv Servicer) error
 	Get(sid string) *Session
 	GetAll() []*Session
 	Delete(s *Session)
@@ -33,12 +33,15 @@ func NewSessionStore() *sessionStore {
 }
 
 // NewSession creates a new session and saves it to the session store.
-func (ss *sessionStore) NewSession(ctx context.Context, conn interface{}, serverID string, srv *Service) error {
+func (ss *sessionStore) NewSession(ctx context.Context, conn interface{}, serverID string, srv Servicer) error {
 	var s Session
 	s.ctx = ctx
 	s.sid = ksuid.New().String()
 	s.serverID = serverID
-	s.srv = srv
+	var ok bool
+	if s.srv, ok = srv.(*Service); !ok {
+		return ecode.ErrInternalServer
+	}
 
 	if ss.cache.Existed(s.sid) {
 		return ecode.ErrInternalServer.ResetMessage("duplicate session ID")

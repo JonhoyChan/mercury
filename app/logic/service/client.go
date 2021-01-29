@@ -23,9 +23,27 @@ func (s *Service) getClient(ctx context.Context, clientID string) (client *persi
 	return
 }
 
-func (s *Service) CreateClient(ctx context.Context, req *api.CreateClientReq) (string, string, error) {
-	s.log.Info("[CreateClient] request is received")
+func (s *Service) GetClient(ctx context.Context) (*api.Client, error) {
+	id := MustClientIDFromContext(ctx)
+	client, err := s.getClient(ctx, id)
+	if err != nil {
+		s.log.Error("[GetClient] failed to get client", "error", err)
+		return nil, err
+	}
 
+	return &api.Client{
+		ID:          client.ID,
+		CreatedAt:   client.CreatedAt,
+		UpdatedAt:   client.UpdatedAt,
+		Name:        client.Name,
+		TokenSecret: client.TokenSecret,
+		TokenExpire: int64(client.TokenExpire.Seconds()),
+		UserCount:   client.UserCount,
+		GroupCount:  client.GroupCount,
+	}, nil
+}
+
+func (s *Service) CreateClient(ctx context.Context, req *api.CreateClientReq) (string, string, error) {
 	secret, err := x.GenerateSecret(26)
 	if err != nil {
 		s.log.Error("[CreateClient] failed to generate secret", "error", err)
@@ -53,14 +71,12 @@ func (s *Service) CreateClient(ctx context.Context, req *api.CreateClientReq) (s
 }
 
 func (s *Service) UpdateClient(ctx context.Context, req *api.UpdateClientReq) error {
-	s.log.Info("[UpdateClient] request is received")
-
-	id := s.MustGetContextClient(ctx)
+	id := MustClientIDFromContext(ctx)
 	in := &persistence.ClientUpdate{
 		ID: id,
 	}
-	if req.ClientName != nil {
-		in.Name = &req.ClientName.Value
+	if req.Name != nil {
+		in.Name = &req.Name.Value
 	}
 	if req.TokenSecret != nil {
 		in.TokenSecret = &req.TokenSecret.Value
@@ -90,9 +106,7 @@ func (s *Service) UpdateClient(ctx context.Context, req *api.UpdateClientReq) er
 }
 
 func (s *Service) DeleteClient(ctx context.Context) error {
-	s.log.Info("[DeleteClient] request is received")
-
-	id := s.MustGetContextClient(ctx)
+	id := MustClientIDFromContext(ctx)
 	if err := s.persister.Client().Delete(ctx, id); err != nil {
 		s.log.Error("[DeleteClient] failed to delete client", "client_id", id, "error", err)
 		return err
@@ -109,8 +123,6 @@ func (s *Service) DeleteClient(ctx context.Context) error {
 }
 
 func (s *Service) GenerateToken(ctx context.Context, req *api.GenerateTokenReq) (string, string, error) {
-	s.log.Info("[GenerateToken] request is received")
-
 	credential, err := s.persister.Client().GetClientCredential(ctx, req.ClientID)
 	if err != nil {
 		s.log.Error("[GenerateToken] failed to get client credential", "client_id", req.ClientID, "error", err)
@@ -131,9 +143,7 @@ func (s *Service) GenerateToken(ctx context.Context, req *api.GenerateTokenReq) 
 	return token, lifetime, nil
 }
 
-func (s *Service) Listen(ctx context.Context, token string, stream api.ChatAdmin_ListenStream) error {
-	s.log.Info("[Listen] request is received")
-
+func (s *Service) Listen(ctx context.Context, token string, stream api.ChatClientAdmin_ListenStream) error {
 	var clientID string
 	_, err := s.token.Authenticate(token, &clientID)
 	if err != nil {

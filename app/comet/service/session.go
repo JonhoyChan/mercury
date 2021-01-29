@@ -93,7 +93,7 @@ type Session struct {
 func (s *Session) readLoop() {
 	defer func() {
 		s.ws.Close()
-		s.srv.SessionStore.Delete(s)
+		s.srv.sessionStore.Delete(s)
 	}()
 
 	s.ws.SetReadLimit(MaxMessageSize)

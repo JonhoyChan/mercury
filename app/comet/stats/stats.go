@@ -2,13 +2,12 @@ package stats
 
 import (
 	"expvar"
+	"net/http"
 	"time"
-
-	"github.com/micro/go-micro/v2/web"
 )
 
 // Runtime statistics communication channel.
-var StatsUpdate chan *varUpdate
+var update chan *varUpdate
 
 type varUpdate struct {
 	// Name of the variable to update
@@ -19,14 +18,12 @@ type varUpdate struct {
 	inc bool
 }
 
-// Initialize stats reporting through expvar.
-func Init(microWeb web.Service, path string) {
-	if path == "" || path == "-" {
-		return
-	}
+var Handler http.Handler
 
-	microWeb.Handle(path, expvar.Handler())
-	StatsUpdate = make(chan *varUpdate, 1024)
+// Initialize stats reporting through expvar.
+func init() {
+	Handler = expvar.Handler()
+	update = make(chan *varUpdate, 1024)
 
 	start := time.Now()
 	expvar.Publish("Uptime", expvar.Func(func() interface{} {
@@ -43,9 +40,9 @@ func RegisterInt(name string) {
 
 // Async publish int variable.
 func Set(name string, val int, inc bool) {
-	if StatsUpdate != nil {
+	if update != nil {
 		select {
-		case StatsUpdate <- &varUpdate{name, int64(val), inc}:
+		case update <- &varUpdate{name, int64(val), inc}:
 		default:
 		}
 	}
@@ -53,16 +50,16 @@ func Set(name string, val int, inc bool) {
 
 // Stop publishing stats.
 func Shutdown() {
-	if StatsUpdate != nil {
-		StatsUpdate <- nil
+	if update != nil {
+		update <- nil
 	}
 }
 
 // The go routine which actually publishes stats updates.
 func updater() {
-	for upd := range StatsUpdate {
+	for upd := range update {
 		if upd == nil {
-			StatsUpdate = nil
+			update = nil
 			// Dont' care to close the channel.
 			break
 		}
@@ -70,11 +67,11 @@ func updater() {
 		// Handle var update
 		if ev := expvar.Get(upd.name); ev != nil {
 			// Intentional panic if the ev is not *expvar.Int.
-			intvar := ev.(*expvar.Int)
+			intVar := ev.(*expvar.Int)
 			if upd.inc {
-				intvar.Add(upd.count)
+				intVar.Add(upd.count)
 			} else {
-				intvar.Set(upd.count)
+				intVar.Set(upd.count)
 			}
 		} else {
 			panic("stats: update to unknown variable " + upd.name)

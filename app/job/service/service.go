@@ -7,7 +7,7 @@ import (
 	"github.com/micro/go-micro/v2/registry"
 	"github.com/micro/go-micro/v2/server"
 	cApi "mercury/app/comet/api"
-	"mercury/app/job/config"
+	"mercury/config"
 	"mercury/x/ecode"
 	"mercury/x/log"
 	"strings"
@@ -15,26 +15,37 @@ import (
 	"time"
 )
 
+type Servicer interface {
+	Init(options server.Options)
+	Close()
+}
+
 var grpcClient cApi.ChatService
 
 type Service struct {
-	mutex        *sync.Mutex
-	config       config.Provider
-	registry     registry.Registry
 	broker       broker.Broker
+	config       ConfigProvider
 	cometServers map[string]*Comet
-	watchChan    chan bool
+	log          log.Logger
+	mutex        *sync.Mutex
+	registry     registry.Registry
 	stopChan     chan struct{}
+	watchChan    chan bool
 }
 
-func NewService(config config.Provider) *Service {
+type ConfigProvider interface {
+	Topic() config.Topic
+}
+
+func NewService(config ConfigProvider, l log.Logger) (*Service, error) {
 	return &Service{
-		mutex:        &sync.Mutex{},
 		config:       config,
 		cometServers: make(map[string]*Comet),
-		watchChan:    make(chan bool, 1),
+		log:          l,
+		mutex:        &sync.Mutex{},
 		stopChan:     make(chan struct{}),
-	}
+		watchChan:    make(chan bool, 1),
+	}, nil
 }
 
 func (s *Service) Init(options server.Options) {
@@ -56,7 +67,7 @@ func (s *Service) withRegistry(r registry.Registry) {
 
 		c := grpc.NewClient(opts...)
 
-		grpcClient = cApi.NewChatService(s.config.CometServiceName(), c)
+		grpcClient = cApi.NewChatService("mercury.comet", c)
 
 		go s.watchComet()
 	}
@@ -66,13 +77,20 @@ func (s *Service) withBroker(b broker.Broker) {
 	if s.broker == nil {
 		s.broker = b
 
-		if _, err := s.broker.Subscribe(s.config.PushMessageTopic(), s.subscribePushMessage); err != nil {
-			log.Error("[WatchComet] failed to subscribe topic", "topic", s.config.PushMessageTopic(), "error", err)
-			return
+		topic := s.config.Topic()
+		pushMessageTopic, ok := topic.Get("push_message")
+		if ok {
+			if _, err := s.broker.Subscribe(pushMessageTopic, s.subscribePushMessage); err != nil {
+				s.log.Error("[WatchComet] failed to subscribe topic", "topic", pushMessageTopic, "error", err)
+				return
+			}
 		}
-		if _, err := s.broker.Subscribe(s.config.BroadcastMessageTopic(), s.subscribeBroadcastMessage); err != nil {
-			log.Error("[WatchComet] failed to subscribe topic", "topic", s.config.BroadcastMessageTopic(), "error", err)
-			return
+		broadcastMessageTopic, ok := topic.Get("broadcast_message")
+		if ok {
+			if _, err := s.broker.Subscribe(broadcastMessageTopic, s.subscribeBroadcastMessage); err != nil {
+				s.log.Error("[WatchComet] failed to subscribe topic", "topic", broadcastMessageTopic, "error", err)
+				return
+			}
 		}
 	}
 }
@@ -95,7 +113,7 @@ func (s *Service) watchComet() {
 }
 
 func (s *Service) watch() {
-	cometServiceName := s.config.CometServiceName()
+	cometServiceName := "mercury.comet"
 	watcher, err := s.registry.Watch(registry.WatchService(cometServiceName))
 	if err != nil {
 		panic("failed to watch service:" + err.Error())
@@ -105,9 +123,9 @@ func (s *Service) watch() {
 		result, err := watcher.Next()
 		if err != nil {
 			if err != registry.ErrWatcherStopped {
-				log.Error("[watch] failed to watch next", "error", err)
+				s.log.Error("[watch] failed to watch next", "error", err)
 			} else {
-				log.Error("[watch] watcher stopped")
+				s.log.Error("[watch] watcher stopped")
 			}
 			break
 		}
@@ -121,21 +139,21 @@ func (s *Service) watch() {
 }
 
 func (s *Service) sync() {
-	ticker := time.NewTicker(s.config.RegisterInterval())
+	ticker := time.NewTicker(15 * time.Second)
 	defer ticker.Stop()
 
 	for {
 		select {
 		case <-ticker.C:
 			if err := s.syncCometNodes(); err != nil {
-				log.Error("[sync] failed to sync comet nodes", "error", err)
+				s.log.Error("[sync] failed to sync comet nodes", "error", err)
 			}
 		case <-s.watchChan:
 			if err := s.syncCometNodes(); err != nil {
-				log.Error("[sync] failed to sync comet nodes", "error", err)
+				s.log.Error("[sync] failed to sync comet nodes", "error", err)
 			}
 		case <-s.stopChan:
-			log.Info("[sync] sync stopped")
+			s.log.Info("[sync] sync stopped")
 			return
 		}
 	}
@@ -144,10 +162,10 @@ func (s *Service) sync() {
 func (s *Service) syncCometNodes() error {
 	s.mutex.Lock()
 	defer s.mutex.Unlock()
-	cometServiceName := s.config.CometServiceName()
+	cometServiceName := "mercury.comet"
 	cometServices, err := s.registry.GetService(cometServiceName)
 	if err != nil {
-		log.Error("[syncCometNodes] failed to new comet", "error", err)
+		s.log.Error("[syncCometNodes] failed to new comet", "error", err)
 		return err
 	}
 
@@ -171,19 +189,19 @@ func (s *Service) syncCometNodes() error {
 
 			c, err := NewComet(id, node.Address)
 			if err != nil {
-				log.Error("[syncCometNodes] can not new comet", "error", err)
+				s.log.Error("[syncCometNodes] can not new comet", "error", err)
 				return err
 			}
 
 			comets[id] = c
 
-			log.Info("[syncCometNodes] new comet", "id", id, "address", node.Address)
+			s.log.Info("[syncCometNodes] new comet", "id", id, "address", node.Address)
 		}
 
 		for id, old := range s.cometServers {
 			if _, ok := comets[id]; !ok {
 				old.cancel()
-				log.Info("[syncCometNodes] delete comet", "id", id)
+				s.log.Info("[syncCometNodes] delete comet", "id", id)
 			}
 		}
 

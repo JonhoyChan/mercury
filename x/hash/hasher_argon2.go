@@ -11,7 +11,7 @@ import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/argon2"
 
-	"mercury/x/config"
+	"mercury/config"
 )
 
 var (
@@ -21,19 +21,15 @@ var (
 )
 
 type HasherArgon2 struct {
-	c HasherArgon2Provider
+	c HasherConfigProvider
 }
 
-type HasherArgon2Provider interface {
-	HasherArgon2() *config.HasherArgon2Config
-}
-
-func NewHasherArgon2(c HasherArgon2Provider) *HasherArgon2 {
+func NewHasherArgon2(c HasherConfigProvider) *HasherArgon2 {
 	return &HasherArgon2{c: c}
 }
 
 func (h *HasherArgon2) Hash(data []byte) ([]byte, error) {
-	c := h.c.HasherArgon2()
+	c := h.c.Hasher().Argon2
 
 	salt := make([]byte, c.SaltLength)
 	if _, err := rand.Read(salt); err != nil {
@@ -43,7 +39,7 @@ func (h *HasherArgon2) Hash(data []byte) ([]byte, error) {
 	// Pass the plaintext password, salt and parameters to the argon2.IDKey
 	// function. This will generate a hash of the password using the Argon2id
 	// variant.
-	hash := argon2.IDKey(data, salt, c.Iterations, c.Memory, c.Parallelism, c.KeyLength)
+	hash := argon2.IDKey(data, salt, uint32(c.Iterations), uint32(c.Memory), uint8(c.Parallelism), uint32(c.KeyLength))
 
 	var b bytes.Buffer
 	if _, err := fmt.Fprintf(
@@ -68,7 +64,7 @@ func (h *HasherArgon2) Compare(hash, data []byte) error {
 	}
 
 	// Derive the key from the other password using the same parameters.
-	otherHash := argon2.IDKey(data, salt, c.Iterations, c.Memory, c.Parallelism, c.KeyLength)
+	otherHash := argon2.IDKey(data, salt, uint32(c.Iterations), uint32(c.Memory), uint8(c.Parallelism), uint32(c.KeyLength))
 
 	// Check that the contents of the hashed passwords are identical. Note
 	// that we are using the subtle.ConstantTimeCompare() function for this
@@ -79,7 +75,7 @@ func (h *HasherArgon2) Compare(hash, data []byte) error {
 	return ErrMismatchedHashAndPassword
 }
 
-func decodeHash(encodedHash string) (c *config.HasherArgon2Config, salt, hash []byte, err error) {
+func decodeHash(encodedHash string) (c *config.HasherArgon2, salt, hash []byte, err error) {
 	parts := strings.Split(encodedHash, "$")
 	if len(parts) != 6 {
 		return nil, nil, nil, ErrInvalidHash
@@ -94,7 +90,7 @@ func decodeHash(encodedHash string) (c *config.HasherArgon2Config, salt, hash []
 		return nil, nil, nil, ErrIncompatibleVersion
 	}
 
-	c = new(config.HasherArgon2Config)
+	c = new(config.HasherArgon2)
 	_, err = fmt.Sscanf(parts[3], "m=%d,t=%d,p=%d", &c.Memory, &c.Iterations, &c.Parallelism)
 	if err != nil {
 		return nil, nil, nil, err
@@ -104,13 +100,13 @@ func decodeHash(encodedHash string) (c *config.HasherArgon2Config, salt, hash []
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	c.SaltLength = uint32(len(salt))
+	c.SaltLength = len(salt)
 
 	hash, err = base64.RawStdEncoding.DecodeString(parts[5])
 	if err != nil {
 		return nil, nil, nil, err
 	}
-	c.KeyLength = uint32(len(hash))
+	c.KeyLength = len(hash)
 
 	return c, salt, hash, nil
 }

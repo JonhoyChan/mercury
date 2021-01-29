@@ -1,7 +1,7 @@
 package token
 
 import (
-	"mercury/x/config"
+	"mercury/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -9,10 +9,13 @@ import (
 
 type defaultTokenConfig struct{}
 
-func (c defaultTokenConfig) AuthenticatorToken() *config.AuthenticatorTokenConfig {
-	return &config.AuthenticatorTokenConfig{
-		Expire: 1209600,
-		Key:    []byte("wfaY2RgF2S1OQI/ZlK+LSrp1KB2jwAdGAIHQ7JZn+Kc="),
+func (c defaultTokenConfig) Authenticator() *config.Authenticator {
+	return &config.Authenticator{
+		Token: config.AuthenticatorToken{
+			Expire:       1209600,
+			SerialNumber: 0,
+			Key:          []byte("wfaY2RgF2S1OQI/ZlK+LSrp1KB2jwAdGAIHQ7JZn+Kc="),
+		},
 	}
 }
 

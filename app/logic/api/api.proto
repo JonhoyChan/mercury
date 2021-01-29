@@ -49,6 +49,17 @@ message StringSliceValue {
     repeated string value = 1;
 }
 
+message Client {
+    string id = 1 [(gogoproto.customname) = "ID"];
+    int64 created_at = 2;
+    int64 updated_at = 3;
+    string name = 4;
+    bytes token_secret = 5;
+    int64 token_expire = 6;
+    int64 user_count = 7;
+    int64 group_count = 8;
+}
+
 message Group {
 	int64 created_at = 1;
 	string name = 2;
@@ -90,6 +101,9 @@ message BroadcastMessage {
 }
 
 /* ---------------------------------------- Service Request ---------------------------------------- */
+message GetClientReq {
+    string token = 1;
+}
 
 message CreateClientReq {
     string name = 1;
@@ -99,7 +113,7 @@ message CreateClientReq {
 
 message UpdateClientReq {
     string token = 1;
-    StringValue client_name = 2;
+    StringValue name = 2;
     StringValue token_secret = 3;
     Int64Value token_expire = 4;
 }
@@ -223,6 +237,10 @@ message KeypressReq {
 
 /* ---------------------------------------- Service Response ---------------------------------------- */
 
+message GetClientResp {
+    Client client = 1;
+}
+
 message CreateClientResp {
     string client_id = 1 [(gogoproto.customname) = "ClientID"];
     string client_secret = 2;
@@ -268,8 +286,20 @@ message PushMessageResp {
 }
 
 /* ---------------------------------------- Service ---------------------------------------- */
-
 service ChatAdmin {
+    // Get client
+    rpc GetClient(GetClientReq) returns (GetClientResp) {};
+    // Create new client
+    rpc CreateClient(CreateClientReq) returns (CreateClientResp) {};
+    // Update client
+    rpc UpdateClient(UpdateClientReq) returns (Empty) {};
+    // Delete client
+    rpc DeleteClient(DeleteClientReq) returns (Empty) {};
+}
+
+service ChatClientAdmin {
+    // Get client
+    rpc GetClient(GetClientReq) returns (GetClientResp) {};
     // Create new client
     rpc CreateClient(CreateClientReq) returns (CreateClientResp) {};
     // Update client

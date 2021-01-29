@@ -2,15 +2,17 @@ package hash
 
 import (
 	"github.com/stretchr/testify/assert"
-	"mercury/x/config"
+	"mercury/config"
 	"testing"
 )
 
 type defaultBCryptConfig struct{}
 
-func (c defaultBCryptConfig) HasherBCrypt() *config.HasherBCryptConfig {
-	return &config.HasherBCryptConfig{
-		Cost: 10,
+func (c defaultBCryptConfig) Hasher() *config.Hasher {
+	return &config.Hasher{
+		BCrypt: config.HasherBCrypt{
+			Cost: 10,
+		},
 	}
 }
 

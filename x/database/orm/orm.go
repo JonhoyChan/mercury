@@ -1,19 +1,21 @@
 package orm
 
 import (
-	"mercury/x/config"
-	"mercury/x/log"
+	"mercury/config"
 	"time"
 
 	"github.com/jinzhu/gorm"
 	_ "github.com/jinzhu/gorm/dialects/postgres"
 )
 
+type ConfigProvider interface {
+	Database() *config.Database
+}
+
 // NewORM new db and retry connection when has error.
-func NewORM(c config.DatabaseProvider) (db *gorm.DB, err error) {
+func NewORM(c ConfigProvider) (db *gorm.DB, err error) {
 	db, err = gorm.Open("postgres", c.Database().DSN)
 	if err != nil {
-		log.Error("db dsn(%s) error: %v", c.Database().DSN, err)
 		return
 	}
 	db.DB().SetMaxIdleConns(c.Database().Idle)

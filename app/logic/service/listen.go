@@ -16,7 +16,7 @@ func (s *Service) InvokeMessageListener(clientID string, message *types.Message)
 	}
 }
 
-func (s *Service) listen(clientID string, stream api.ChatAdmin_ListenStream) error {
+func (s *Service) listen(clientID string, stream api.ChatClientAdmin_ListenStream) error {
 	_, ok := s.messageChan[clientID]
 	if !ok {
 		s.messageChan[clientID] = make(chan *types.Message, 4096)

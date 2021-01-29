@@ -3,25 +3,20 @@ package hash
 import (
 	"github.com/pkg/errors"
 	"golang.org/x/crypto/bcrypt"
-	"mercury/x/config"
 )
 
 const defaultBCryptCost = 12
 
 type HasherBCrypt struct {
-	c HasherBCryptProvider
+	c HasherConfigProvider
 }
 
-type HasherBCryptProvider interface {
-	HasherBCrypt() *config.HasherBCryptConfig
-}
-
-func NewHasherBCrypt(c HasherBCryptProvider) *HasherBCrypt {
+func NewHasherBCrypt(c HasherConfigProvider) *HasherBCrypt {
 	return &HasherBCrypt{c: c}
 }
 
 func (b *HasherBCrypt) Hash(data []byte) ([]byte, error) {
-	c := b.c.HasherBCrypt()
+	c := b.c.Hasher().BCrypt
 	cost := c.Cost
 	if cost == 0 {
 		cost = defaultBCryptCost

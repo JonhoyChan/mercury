@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"database/sql/driver"
 	"io"
-	"mercury/x/config"
+	"mercury/config"
 	"mercury/x/log"
 	"reflect"
 	"time"
@@ -32,7 +32,11 @@ func (db *DB) Close() error {
 	return nil
 }
 
-func Open(c config.DatabaseProvider) (*DB, error) {
+type ConfigProvider interface {
+	Database() *config.Database
+}
+
+func Open(c ConfigProvider) (*DB, error) {
 	dbc := c.Database()
 	db, err := sql.Open(dbc.Driver, dbc.DSN)
 	if err != nil {

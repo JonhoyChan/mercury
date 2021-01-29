@@ -11,13 +11,18 @@ import (
 	"github.com/micro/go-micro/v2/client/grpc"
 )
 
-type Service struct {
-	SessionStore SessionStore
-	log          log.Logger
-	chatService  chatApi.ChatService
+type Servicer interface {
+	SessionStore() SessionStore
+	Close()
 }
 
-func NewService(log log.Logger) *Service {
+type Service struct {
+	chatService  chatApi.ChatService
+	log          log.Logger
+	sessionStore SessionStore
+}
+
+func NewService(l log.Logger) (*Service, error) {
 	opts := []client.Option{
 		client.Retries(2),
 		client.Retry(ecode.RetryOnMicroError),
@@ -27,10 +32,18 @@ func NewService(log log.Logger) *Service {
 	c := grpc.NewClient(opts...)
 
 	return &Service{
-		SessionStore: NewSessionStore(),
-		log:          log,
 		chatService:  chatApi.NewChatService("mercury.logic", c),
-	}
+		log:          l,
+		sessionStore: NewSessionStore(),
+	}, nil
+}
+
+func (s *Service) SessionStore() SessionStore {
+	return s.sessionStore
+}
+
+func (s *Service) Close() {
+	s.sessionStore.Shutdown()
 }
 
 func (s *Service) connect(ctx context.Context, token, sid, serverID string) (string, types.ID, error) {

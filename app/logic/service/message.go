@@ -71,7 +71,7 @@ func (s *Service) PushMessage(ctx context.Context, req *api.PushMessageReq) (int
 
 		// Check if the sender is in the group
 		if !x.IsInSlice(members, s.DecodeID(sender)) {
-			return 0, 0, ecode.NewError("The user is not join the group")
+			return 0, 0, ecode.NewError("the user is not join the group")
 		}
 
 		for _, member := range members {
@@ -80,7 +80,7 @@ func (s *Service) PushMessage(ctx context.Context, req *api.PushMessageReq) (int
 		for _, mention := range req.Mentions {
 			id := s.DecodeID(types.ParseUID(mention))
 			if !x.IsInSlice(members, id) {
-				return 0, 0, ecode.ErrInternalServer.ResetMessage("The mentioned user is not join the group")
+				return 0, 0, ecode.ErrInternalServer.ResetMessage("the mentioned user is not join the group")
 			}
 			mentions = append(mentions, id)
 		}
@@ -271,7 +271,7 @@ func (s *Service) Keypress(ctx context.Context, req *api.KeypressReq) error {
 func (s *Service) send(op types.Operation, v interface{}, skipSID string, uids ...string) {
 	sessions, _, err := s.cache.GetSessions(uids...)
 	if err != nil {
-		s.log.Warn("[Send] failed to get sessions", "error", err)
+		s.log.Warn("[send] failed to get sessions", "error", err)
 		return
 	}
 
@@ -279,7 +279,7 @@ func (s *Service) send(op types.Operation, v interface{}, skipSID string, uids .
 		servers := make(map[string][]string)
 		for sid, serverID := range sessions {
 			if sid == "" || serverID == "" {
-				s.log.Warn("[Send] sid or serverID is empty", "sid", sid, "serverID", serverID, "error", err)
+				s.log.Warn("[send] sid or serverID is empty", "sid", sid, "serverID", serverID, "error", err)
 				continue
 			}
 			if sid != skipSID {
@@ -289,19 +289,22 @@ func (s *Service) send(op types.Operation, v interface{}, skipSID string, uids .
 
 		data, err := jsoniter.Marshal(v)
 		if err != nil {
-			s.log.Warn("[Send] failed to marshal", "error", err)
+			s.log.Warn("[send] failed to marshal", "error", err)
 			return
 		}
 
-		topic := s.config.PushMessageTopic()
-		for serverID, sids := range servers {
-			if err := s.invoke(topic, &api.PushMessage{
-				Operation: int32(op),
-				ServerID:  serverID,
-				SIDs:      sids,
-				Data:      data,
-			}); err != nil {
-				s.log.Warn("[Send] failed to invoke", "serverID", serverID, "error", err)
+		topic := s.config.Topic()
+		pushMessageTopic, ok := topic.Get("push_message")
+		if ok {
+			for serverID, sids := range servers {
+				if err := s.invoke(pushMessageTopic, &api.PushMessage{
+					Operation: int32(op),
+					ServerID:  serverID,
+					SIDs:      sids,
+					Data:      data,
+				}); err != nil {
+					s.log.Warn("[send] failed to invoke", "serverID", serverID, "error", err)
+				}
 			}
 		}
 	}

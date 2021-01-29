@@ -8,7 +8,7 @@ import (
 	"encoding/hex"
 	"fmt"
 	jsoniter "github.com/json-iterator/go"
-	"mercury/x/config"
+	"mercury/config"
 	"mercury/x/ecode"
 	"time"
 )
@@ -25,12 +25,12 @@ type authenticator struct {
 	lifetime time.Duration
 }
 
-type AuthenticatorTokenProvider interface {
-	AuthenticatorToken() *config.AuthenticatorTokenConfig
+type AuthenticatorProvider interface {
+	Authenticator() *config.Authenticator
 }
 
-func NewAuthenticator(p AuthenticatorTokenProvider) (*authenticator, error) {
-	tokenConfig := p.AuthenticatorToken()
+func NewAuthenticator(p AuthenticatorProvider) (*authenticator, error) {
+	tokenConfig := p.Authenticator().Token
 
 	if len(tokenConfig.Key) < sha256.Size {
 		return nil, ecode.NewError("the key is missing or too short")

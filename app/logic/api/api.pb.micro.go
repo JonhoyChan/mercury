@@ -43,38 +43,14 @@ func NewChatAdminEndpoints() []*api.Endpoint {
 // Client API for ChatAdmin service
 
 type ChatAdminService interface {
+	// Get client
+	GetClient(ctx context.Context, in *GetClientReq, opts ...client.CallOption) (*GetClientResp, error)
 	// Create new client
 	CreateClient(ctx context.Context, in *CreateClientReq, opts ...client.CallOption) (*CreateClientResp, error)
 	// Update client
 	UpdateClient(ctx context.Context, in *UpdateClientReq, opts ...client.CallOption) (*Empty, error)
 	// Delete client
 	DeleteClient(ctx context.Context, in *DeleteClientReq, opts ...client.CallOption) (*Empty, error)
-	// Generate a new token for client
-	GenerateToken(ctx context.Context, in *GenerateTokenReq, opts ...client.CallOption) (*TokenResp, error)
-	// Create new user
-	CreateUser(ctx context.Context, in *CreateUserReq, opts ...client.CallOption) (*CreateUserResp, error)
-	// Update user activated
-	UpdateActivated(ctx context.Context, in *UpdateActivatedReq, opts ...client.CallOption) (*Empty, error)
-	// Delete user
-	DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...client.CallOption) (*Empty, error)
-	// Generate a new token for user
-	GenerateUserToken(ctx context.Context, in *GenerateUserTokenReq, opts ...client.CallOption) (*TokenResp, error)
-	// Add friend
-	AddFriend(ctx context.Context, in *AddFriendReq, opts ...client.CallOption) (*Empty, error)
-	// Get friends
-	GetFriends(ctx context.Context, in *GetFriendsReq, opts ...client.CallOption) (*GetFriendsResp, error)
-	// Delete friend
-	DeleteFriend(ctx context.Context, in *DeleteFriendReq, opts ...client.CallOption) (*Empty, error)
-	// Create new group
-	CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...client.CallOption) (*CreateGroupResp, error)
-	// Get groups
-	GetGroups(ctx context.Context, in *GetGroupsReq, opts ...client.CallOption) (*GetGroupsResp, error)
-	// Add user to group
-	AddMember(ctx context.Context, in *AddMemberReq, opts ...client.CallOption) (*Empty, error)
-	// Get users of the group
-	GetMembers(ctx context.Context, in *GetMembersReq, opts ...client.CallOption) (*GetMembersResp, error)
-	// Listening all real-time messages under the client to which the current token belongs
-	Listen(ctx context.Context, in *ListenReq, opts ...client.CallOption) (ChatAdmin_ListenService, error)
 }
 
 type chatAdminService struct {
@@ -87,6 +63,16 @@ func NewChatAdminService(name string, c client.Client) ChatAdminService {
 		c:    c,
 		name: name,
 	}
+}
+
+func (c *chatAdminService) GetClient(ctx context.Context, in *GetClientReq, opts ...client.CallOption) (*GetClientResp, error) {
+	req := c.c.NewRequest(c.name, "ChatAdmin.GetClient", in)
+	out := new(GetClientResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
 }
 
 func (c *chatAdminService) CreateClient(ctx context.Context, in *CreateClientReq, opts ...client.CallOption) (*CreateClientResp, error) {
@@ -119,8 +105,152 @@ func (c *chatAdminService) DeleteClient(ctx context.Context, in *DeleteClientReq
 	return out, nil
 }
 
-func (c *chatAdminService) GenerateToken(ctx context.Context, in *GenerateTokenReq, opts ...client.CallOption) (*TokenResp, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.GenerateToken", in)
+// Server API for ChatAdmin service
+
+type ChatAdminHandler interface {
+	// Get client
+	GetClient(context.Context, *GetClientReq, *GetClientResp) error
+	// Create new client
+	CreateClient(context.Context, *CreateClientReq, *CreateClientResp) error
+	// Update client
+	UpdateClient(context.Context, *UpdateClientReq, *Empty) error
+	// Delete client
+	DeleteClient(context.Context, *DeleteClientReq, *Empty) error
+}
+
+func RegisterChatAdminHandler(s server.Server, hdlr ChatAdminHandler, opts ...server.HandlerOption) error {
+	type chatAdmin interface {
+		GetClient(ctx context.Context, in *GetClientReq, out *GetClientResp) error
+		CreateClient(ctx context.Context, in *CreateClientReq, out *CreateClientResp) error
+		UpdateClient(ctx context.Context, in *UpdateClientReq, out *Empty) error
+		DeleteClient(ctx context.Context, in *DeleteClientReq, out *Empty) error
+	}
+	type ChatAdmin struct {
+		chatAdmin
+	}
+	h := &chatAdminHandler{hdlr}
+	return s.Handle(s.NewHandler(&ChatAdmin{h}, opts...))
+}
+
+type chatAdminHandler struct {
+	ChatAdminHandler
+}
+
+func (h *chatAdminHandler) GetClient(ctx context.Context, in *GetClientReq, out *GetClientResp) error {
+	return h.ChatAdminHandler.GetClient(ctx, in, out)
+}
+
+func (h *chatAdminHandler) CreateClient(ctx context.Context, in *CreateClientReq, out *CreateClientResp) error {
+	return h.ChatAdminHandler.CreateClient(ctx, in, out)
+}
+
+func (h *chatAdminHandler) UpdateClient(ctx context.Context, in *UpdateClientReq, out *Empty) error {
+	return h.ChatAdminHandler.UpdateClient(ctx, in, out)
+}
+
+func (h *chatAdminHandler) DeleteClient(ctx context.Context, in *DeleteClientReq, out *Empty) error {
+	return h.ChatAdminHandler.DeleteClient(ctx, in, out)
+}
+
+// Api Endpoints for ChatClientAdmin service
+
+func NewChatClientAdminEndpoints() []*api.Endpoint {
+	return []*api.Endpoint{}
+}
+
+// Client API for ChatClientAdmin service
+
+type ChatClientAdminService interface {
+	// Get client
+	GetClient(ctx context.Context, in *GetClientReq, opts ...client.CallOption) (*GetClientResp, error)
+	// Create new client
+	CreateClient(ctx context.Context, in *CreateClientReq, opts ...client.CallOption) (*CreateClientResp, error)
+	// Update client
+	UpdateClient(ctx context.Context, in *UpdateClientReq, opts ...client.CallOption) (*Empty, error)
+	// Delete client
+	DeleteClient(ctx context.Context, in *DeleteClientReq, opts ...client.CallOption) (*Empty, error)
+	// Generate a new token for client
+	GenerateToken(ctx context.Context, in *GenerateTokenReq, opts ...client.CallOption) (*TokenResp, error)
+	// Create new user
+	CreateUser(ctx context.Context, in *CreateUserReq, opts ...client.CallOption) (*CreateUserResp, error)
+	// Update user activated
+	UpdateActivated(ctx context.Context, in *UpdateActivatedReq, opts ...client.CallOption) (*Empty, error)
+	// Delete user
+	DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...client.CallOption) (*Empty, error)
+	// Generate a new token for user
+	GenerateUserToken(ctx context.Context, in *GenerateUserTokenReq, opts ...client.CallOption) (*TokenResp, error)
+	// Add friend
+	AddFriend(ctx context.Context, in *AddFriendReq, opts ...client.CallOption) (*Empty, error)
+	// Get friends
+	GetFriends(ctx context.Context, in *GetFriendsReq, opts ...client.CallOption) (*GetFriendsResp, error)
+	// Delete friend
+	DeleteFriend(ctx context.Context, in *DeleteFriendReq, opts ...client.CallOption) (*Empty, error)
+	// Create new group
+	CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...client.CallOption) (*CreateGroupResp, error)
+	// Get groups
+	GetGroups(ctx context.Context, in *GetGroupsReq, opts ...client.CallOption) (*GetGroupsResp, error)
+	// Add user to group
+	AddMember(ctx context.Context, in *AddMemberReq, opts ...client.CallOption) (*Empty, error)
+	// Get users of the group
+	GetMembers(ctx context.Context, in *GetMembersReq, opts ...client.CallOption) (*GetMembersResp, error)
+	// Listening all real-time messages under the client to which the current token belongs
+	Listen(ctx context.Context, in *ListenReq, opts ...client.CallOption) (ChatClientAdmin_ListenService, error)
+}
+
+type chatClientAdminService struct {
+	c    client.Client
+	name string
+}
+
+func NewChatClientAdminService(name string, c client.Client) ChatClientAdminService {
+	return &chatClientAdminService{
+		c:    c,
+		name: name,
+	}
+}
+
+func (c *chatClientAdminService) GetClient(ctx context.Context, in *GetClientReq, opts ...client.CallOption) (*GetClientResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.GetClient", in)
+	out := new(GetClientResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatClientAdminService) CreateClient(ctx context.Context, in *CreateClientReq, opts ...client.CallOption) (*CreateClientResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.CreateClient", in)
+	out := new(CreateClientResp)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatClientAdminService) UpdateClient(ctx context.Context, in *UpdateClientReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.UpdateClient", in)
+	out := new(Empty)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatClientAdminService) DeleteClient(ctx context.Context, in *DeleteClientReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.DeleteClient", in)
+	out := new(Empty)
+	err := c.c.Call(ctx, req, out, opts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *chatClientAdminService) GenerateToken(ctx context.Context, in *GenerateTokenReq, opts ...client.CallOption) (*TokenResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.GenerateToken", in)
 	out := new(TokenResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -129,8 +259,8 @@ func (c *chatAdminService) GenerateToken(ctx context.Context, in *GenerateTokenR
 	return out, nil
 }
 
-func (c *chatAdminService) CreateUser(ctx context.Context, in *CreateUserReq, opts ...client.CallOption) (*CreateUserResp, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.CreateUser", in)
+func (c *chatClientAdminService) CreateUser(ctx context.Context, in *CreateUserReq, opts ...client.CallOption) (*CreateUserResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.CreateUser", in)
 	out := new(CreateUserResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -139,8 +269,8 @@ func (c *chatAdminService) CreateUser(ctx context.Context, in *CreateUserReq, op
 	return out, nil
 }
 
-func (c *chatAdminService) UpdateActivated(ctx context.Context, in *UpdateActivatedReq, opts ...client.CallOption) (*Empty, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.UpdateActivated", in)
+func (c *chatClientAdminService) UpdateActivated(ctx context.Context, in *UpdateActivatedReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.UpdateActivated", in)
 	out := new(Empty)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -149,8 +279,8 @@ func (c *chatAdminService) UpdateActivated(ctx context.Context, in *UpdateActiva
 	return out, nil
 }
 
-func (c *chatAdminService) DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...client.CallOption) (*Empty, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.DeleteUser", in)
+func (c *chatClientAdminService) DeleteUser(ctx context.Context, in *DeleteUserReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.DeleteUser", in)
 	out := new(Empty)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -159,8 +289,8 @@ func (c *chatAdminService) DeleteUser(ctx context.Context, in *DeleteUserReq, op
 	return out, nil
 }
 
-func (c *chatAdminService) GenerateUserToken(ctx context.Context, in *GenerateUserTokenReq, opts ...client.CallOption) (*TokenResp, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.GenerateUserToken", in)
+func (c *chatClientAdminService) GenerateUserToken(ctx context.Context, in *GenerateUserTokenReq, opts ...client.CallOption) (*TokenResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.GenerateUserToken", in)
 	out := new(TokenResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -169,8 +299,8 @@ func (c *chatAdminService) GenerateUserToken(ctx context.Context, in *GenerateUs
 	return out, nil
 }
 
-func (c *chatAdminService) AddFriend(ctx context.Context, in *AddFriendReq, opts ...client.CallOption) (*Empty, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.AddFriend", in)
+func (c *chatClientAdminService) AddFriend(ctx context.Context, in *AddFriendReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.AddFriend", in)
 	out := new(Empty)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -179,8 +309,8 @@ func (c *chatAdminService) AddFriend(ctx context.Context, in *AddFriendReq, opts
 	return out, nil
 }
 
-func (c *chatAdminService) GetFriends(ctx context.Context, in *GetFriendsReq, opts ...client.CallOption) (*GetFriendsResp, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.GetFriends", in)
+func (c *chatClientAdminService) GetFriends(ctx context.Context, in *GetFriendsReq, opts ...client.CallOption) (*GetFriendsResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.GetFriends", in)
 	out := new(GetFriendsResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -189,8 +319,8 @@ func (c *chatAdminService) GetFriends(ctx context.Context, in *GetFriendsReq, op
 	return out, nil
 }
 
-func (c *chatAdminService) DeleteFriend(ctx context.Context, in *DeleteFriendReq, opts ...client.CallOption) (*Empty, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.DeleteFriend", in)
+func (c *chatClientAdminService) DeleteFriend(ctx context.Context, in *DeleteFriendReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.DeleteFriend", in)
 	out := new(Empty)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -199,8 +329,8 @@ func (c *chatAdminService) DeleteFriend(ctx context.Context, in *DeleteFriendReq
 	return out, nil
 }
 
-func (c *chatAdminService) CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...client.CallOption) (*CreateGroupResp, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.CreateGroup", in)
+func (c *chatClientAdminService) CreateGroup(ctx context.Context, in *CreateGroupReq, opts ...client.CallOption) (*CreateGroupResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.CreateGroup", in)
 	out := new(CreateGroupResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -209,8 +339,8 @@ func (c *chatAdminService) CreateGroup(ctx context.Context, in *CreateGroupReq, 
 	return out, nil
 }
 
-func (c *chatAdminService) GetGroups(ctx context.Context, in *GetGroupsReq, opts ...client.CallOption) (*GetGroupsResp, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.GetGroups", in)
+func (c *chatClientAdminService) GetGroups(ctx context.Context, in *GetGroupsReq, opts ...client.CallOption) (*GetGroupsResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.GetGroups", in)
 	out := new(GetGroupsResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -219,8 +349,8 @@ func (c *chatAdminService) GetGroups(ctx context.Context, in *GetGroupsReq, opts
 	return out, nil
 }
 
-func (c *chatAdminService) AddMember(ctx context.Context, in *AddMemberReq, opts ...client.CallOption) (*Empty, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.AddMember", in)
+func (c *chatClientAdminService) AddMember(ctx context.Context, in *AddMemberReq, opts ...client.CallOption) (*Empty, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.AddMember", in)
 	out := new(Empty)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -229,8 +359,8 @@ func (c *chatAdminService) AddMember(ctx context.Context, in *AddMemberReq, opts
 	return out, nil
 }
 
-func (c *chatAdminService) GetMembers(ctx context.Context, in *GetMembersReq, opts ...client.CallOption) (*GetMembersResp, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.GetMembers", in)
+func (c *chatClientAdminService) GetMembers(ctx context.Context, in *GetMembersReq, opts ...client.CallOption) (*GetMembersResp, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.GetMembers", in)
 	out := new(GetMembersResp)
 	err := c.c.Call(ctx, req, out, opts...)
 	if err != nil {
@@ -239,8 +369,8 @@ func (c *chatAdminService) GetMembers(ctx context.Context, in *GetMembersReq, op
 	return out, nil
 }
 
-func (c *chatAdminService) Listen(ctx context.Context, in *ListenReq, opts ...client.CallOption) (ChatAdmin_ListenService, error) {
-	req := c.c.NewRequest(c.name, "ChatAdmin.Listen", &ListenReq{})
+func (c *chatClientAdminService) Listen(ctx context.Context, in *ListenReq, opts ...client.CallOption) (ChatClientAdmin_ListenService, error) {
+	req := c.c.NewRequest(c.name, "ChatClientAdmin.Listen", &ListenReq{})
 	stream, err := c.c.Stream(ctx, req, opts...)
 	if err != nil {
 		return nil, err
@@ -248,10 +378,10 @@ func (c *chatAdminService) Listen(ctx context.Context, in *ListenReq, opts ...cl
 	if err := stream.Send(in); err != nil {
 		return nil, err
 	}
-	return &chatAdminServiceListen{stream}, nil
+	return &chatClientAdminServiceListen{stream}, nil
 }
 
-type ChatAdmin_ListenService interface {
+type ChatClientAdmin_ListenService interface {
 	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
@@ -259,27 +389,27 @@ type ChatAdmin_ListenService interface {
 	Recv() (*Message, error)
 }
 
-type chatAdminServiceListen struct {
+type chatClientAdminServiceListen struct {
 	stream client.Stream
 }
 
-func (x *chatAdminServiceListen) Close() error {
+func (x *chatClientAdminServiceListen) Close() error {
 	return x.stream.Close()
 }
 
-func (x *chatAdminServiceListen) Context() context.Context {
+func (x *chatClientAdminServiceListen) Context() context.Context {
 	return x.stream.Context()
 }
 
-func (x *chatAdminServiceListen) SendMsg(m interface{}) error {
+func (x *chatClientAdminServiceListen) SendMsg(m interface{}) error {
 	return x.stream.Send(m)
 }
 
-func (x *chatAdminServiceListen) RecvMsg(m interface{}) error {
+func (x *chatClientAdminServiceListen) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *chatAdminServiceListen) Recv() (*Message, error) {
+func (x *chatClientAdminServiceListen) Recv() (*Message, error) {
 	m := new(Message)
 	err := x.stream.Recv(m)
 	if err != nil {
@@ -288,9 +418,11 @@ func (x *chatAdminServiceListen) Recv() (*Message, error) {
 	return m, nil
 }
 
-// Server API for ChatAdmin service
+// Server API for ChatClientAdmin service
 
-type ChatAdminHandler interface {
+type ChatClientAdminHandler interface {
+	// Get client
+	GetClient(context.Context, *GetClientReq, *GetClientResp) error
 	// Create new client
 	CreateClient(context.Context, *CreateClientReq, *CreateClientResp) error
 	// Update client
@@ -322,11 +454,12 @@ type ChatAdminHandler interface {
 	// Get users of the group
 	GetMembers(context.Context, *GetMembersReq, *GetMembersResp) error
 	// Listening all real-time messages under the client to which the current token belongs
-	Listen(context.Context, *ListenReq, ChatAdmin_ListenStream) error
+	Listen(context.Context, *ListenReq, ChatClientAdmin_ListenStream) error
 }
 
-func RegisterChatAdminHandler(s server.Server, hdlr ChatAdminHandler, opts ...server.HandlerOption) error {
-	type chatAdmin interface {
+func RegisterChatClientAdminHandler(s server.Server, hdlr ChatClientAdminHandler, opts ...server.HandlerOption) error {
+	type chatClientAdmin interface {
+		GetClient(ctx context.Context, in *GetClientReq, out *GetClientResp) error
 		CreateClient(ctx context.Context, in *CreateClientReq, out *CreateClientResp) error
 		UpdateClient(ctx context.Context, in *UpdateClientReq, out *Empty) error
 		DeleteClient(ctx context.Context, in *DeleteClientReq, out *Empty) error
@@ -344,86 +477,90 @@ func RegisterChatAdminHandler(s server.Server, hdlr ChatAdminHandler, opts ...se
 		GetMembers(ctx context.Context, in *GetMembersReq, out *GetMembersResp) error
 		Listen(ctx context.Context, stream server.Stream) error
 	}
-	type ChatAdmin struct {
-		chatAdmin
+	type ChatClientAdmin struct {
+		chatClientAdmin
 	}
-	h := &chatAdminHandler{hdlr}
-	return s.Handle(s.NewHandler(&ChatAdmin{h}, opts...))
+	h := &chatClientAdminHandler{hdlr}
+	return s.Handle(s.NewHandler(&ChatClientAdmin{h}, opts...))
 }
 
-type chatAdminHandler struct {
-	ChatAdminHandler
+type chatClientAdminHandler struct {
+	ChatClientAdminHandler
 }
 
-func (h *chatAdminHandler) CreateClient(ctx context.Context, in *CreateClientReq, out *CreateClientResp) error {
-	return h.ChatAdminHandler.CreateClient(ctx, in, out)
+func (h *chatClientAdminHandler) GetClient(ctx context.Context, in *GetClientReq, out *GetClientResp) error {
+	return h.ChatClientAdminHandler.GetClient(ctx, in, out)
 }
 
-func (h *chatAdminHandler) UpdateClient(ctx context.Context, in *UpdateClientReq, out *Empty) error {
-	return h.ChatAdminHandler.UpdateClient(ctx, in, out)
+func (h *chatClientAdminHandler) CreateClient(ctx context.Context, in *CreateClientReq, out *CreateClientResp) error {
+	return h.ChatClientAdminHandler.CreateClient(ctx, in, out)
 }
 
-func (h *chatAdminHandler) DeleteClient(ctx context.Context, in *DeleteClientReq, out *Empty) error {
-	return h.ChatAdminHandler.DeleteClient(ctx, in, out)
+func (h *chatClientAdminHandler) UpdateClient(ctx context.Context, in *UpdateClientReq, out *Empty) error {
+	return h.ChatClientAdminHandler.UpdateClient(ctx, in, out)
 }
 
-func (h *chatAdminHandler) GenerateToken(ctx context.Context, in *GenerateTokenReq, out *TokenResp) error {
-	return h.ChatAdminHandler.GenerateToken(ctx, in, out)
+func (h *chatClientAdminHandler) DeleteClient(ctx context.Context, in *DeleteClientReq, out *Empty) error {
+	return h.ChatClientAdminHandler.DeleteClient(ctx, in, out)
 }
 
-func (h *chatAdminHandler) CreateUser(ctx context.Context, in *CreateUserReq, out *CreateUserResp) error {
-	return h.ChatAdminHandler.CreateUser(ctx, in, out)
+func (h *chatClientAdminHandler) GenerateToken(ctx context.Context, in *GenerateTokenReq, out *TokenResp) error {
+	return h.ChatClientAdminHandler.GenerateToken(ctx, in, out)
 }
 
-func (h *chatAdminHandler) UpdateActivated(ctx context.Context, in *UpdateActivatedReq, out *Empty) error {
-	return h.ChatAdminHandler.UpdateActivated(ctx, in, out)
+func (h *chatClientAdminHandler) CreateUser(ctx context.Context, in *CreateUserReq, out *CreateUserResp) error {
+	return h.ChatClientAdminHandler.CreateUser(ctx, in, out)
 }
 
-func (h *chatAdminHandler) DeleteUser(ctx context.Context, in *DeleteUserReq, out *Empty) error {
-	return h.ChatAdminHandler.DeleteUser(ctx, in, out)
+func (h *chatClientAdminHandler) UpdateActivated(ctx context.Context, in *UpdateActivatedReq, out *Empty) error {
+	return h.ChatClientAdminHandler.UpdateActivated(ctx, in, out)
 }
 
-func (h *chatAdminHandler) GenerateUserToken(ctx context.Context, in *GenerateUserTokenReq, out *TokenResp) error {
-	return h.ChatAdminHandler.GenerateUserToken(ctx, in, out)
+func (h *chatClientAdminHandler) DeleteUser(ctx context.Context, in *DeleteUserReq, out *Empty) error {
+	return h.ChatClientAdminHandler.DeleteUser(ctx, in, out)
 }
 
-func (h *chatAdminHandler) AddFriend(ctx context.Context, in *AddFriendReq, out *Empty) error {
-	return h.ChatAdminHandler.AddFriend(ctx, in, out)
+func (h *chatClientAdminHandler) GenerateUserToken(ctx context.Context, in *GenerateUserTokenReq, out *TokenResp) error {
+	return h.ChatClientAdminHandler.GenerateUserToken(ctx, in, out)
 }
 
-func (h *chatAdminHandler) GetFriends(ctx context.Context, in *GetFriendsReq, out *GetFriendsResp) error {
-	return h.ChatAdminHandler.GetFriends(ctx, in, out)
+func (h *chatClientAdminHandler) AddFriend(ctx context.Context, in *AddFriendReq, out *Empty) error {
+	return h.ChatClientAdminHandler.AddFriend(ctx, in, out)
 }
 
-func (h *chatAdminHandler) DeleteFriend(ctx context.Context, in *DeleteFriendReq, out *Empty) error {
-	return h.ChatAdminHandler.DeleteFriend(ctx, in, out)
+func (h *chatClientAdminHandler) GetFriends(ctx context.Context, in *GetFriendsReq, out *GetFriendsResp) error {
+	return h.ChatClientAdminHandler.GetFriends(ctx, in, out)
 }
 
-func (h *chatAdminHandler) CreateGroup(ctx context.Context, in *CreateGroupReq, out *CreateGroupResp) error {
-	return h.ChatAdminHandler.CreateGroup(ctx, in, out)
+func (h *chatClientAdminHandler) DeleteFriend(ctx context.Context, in *DeleteFriendReq, out *Empty) error {
+	return h.ChatClientAdminHandler.DeleteFriend(ctx, in, out)
 }
 
-func (h *chatAdminHandler) GetGroups(ctx context.Context, in *GetGroupsReq, out *GetGroupsResp) error {
-	return h.ChatAdminHandler.GetGroups(ctx, in, out)
+func (h *chatClientAdminHandler) CreateGroup(ctx context.Context, in *CreateGroupReq, out *CreateGroupResp) error {
+	return h.ChatClientAdminHandler.CreateGroup(ctx, in, out)
 }
 
-func (h *chatAdminHandler) AddMember(ctx context.Context, in *AddMemberReq, out *Empty) error {
-	return h.ChatAdminHandler.AddMember(ctx, in, out)
+func (h *chatClientAdminHandler) GetGroups(ctx context.Context, in *GetGroupsReq, out *GetGroupsResp) error {
+	return h.ChatClientAdminHandler.GetGroups(ctx, in, out)
 }
 
-func (h *chatAdminHandler) GetMembers(ctx context.Context, in *GetMembersReq, out *GetMembersResp) error {
-	return h.ChatAdminHandler.GetMembers(ctx, in, out)
+func (h *chatClientAdminHandler) AddMember(ctx context.Context, in *AddMemberReq, out *Empty) error {
+	return h.ChatClientAdminHandler.AddMember(ctx, in, out)
 }
 
-func (h *chatAdminHandler) Listen(ctx context.Context, stream server.Stream) error {
+func (h *chatClientAdminHandler) GetMembers(ctx context.Context, in *GetMembersReq, out *GetMembersResp) error {
+	return h.ChatClientAdminHandler.GetMembers(ctx, in, out)
+}
+
+func (h *chatClientAdminHandler) Listen(ctx context.Context, stream server.Stream) error {
 	m := new(ListenReq)
 	if err := stream.Recv(m); err != nil {
 		return err
 	}
-	return h.ChatAdminHandler.Listen(ctx, m, &chatAdminListenStream{stream})
+	return h.ChatClientAdminHandler.Listen(ctx, m, &chatClientAdminListenStream{stream})
 }
 
-type ChatAdmin_ListenStream interface {
+type ChatClientAdmin_ListenStream interface {
 	Context() context.Context
 	SendMsg(interface{}) error
 	RecvMsg(interface{}) error
@@ -431,27 +568,27 @@ type ChatAdmin_ListenStream interface {
 	Send(*Message) error
 }
 
-type chatAdminListenStream struct {
+type chatClientAdminListenStream struct {
 	stream server.Stream
 }
 
-func (x *chatAdminListenStream) Close() error {
+func (x *chatClientAdminListenStream) Close() error {
 	return x.stream.Close()
 }
 
-func (x *chatAdminListenStream) Context() context.Context {
+func (x *chatClientAdminListenStream) Context() context.Context {
 	return x.stream.Context()
 }
 
-func (x *chatAdminListenStream) SendMsg(m interface{}) error {
+func (x *chatClientAdminListenStream) SendMsg(m interface{}) error {
 	return x.stream.Send(m)
 }
 
-func (x *chatAdminListenStream) RecvMsg(m interface{}) error {
+func (x *chatClientAdminListenStream) RecvMsg(m interface{}) error {
 	return x.stream.Recv(m)
 }
 
-func (x *chatAdminListenStream) Send(m *Message) error {
+func (x *chatClientAdminListenStream) Send(m *Message) error {
 	return x.stream.Send(m)
 }
 

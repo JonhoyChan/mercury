@@ -1,7 +1,7 @@
 package redis
 
 import (
-	"mercury/x/config"
+	"mercury/config"
 
 	"github.com/go-redis/redis/v7"
 )
@@ -14,7 +14,11 @@ type Client struct {
 	*redis.Client
 }
 
-func NewClient(c config.RedisProvider) (*Client, error) {
+type ConfigProvider interface {
+	Redis() *config.Redis
+}
+
+func NewClient(c ConfigProvider) (*Client, error) {
 	rc := c.Redis()
 	options := &redis.Options{
 		Addr:        rc.Address,

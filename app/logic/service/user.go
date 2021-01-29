@@ -8,9 +8,7 @@ import (
 )
 
 func (s *Service) CreateUser(ctx context.Context, req *api.CreateUserReq) (string, error) {
-	s.log.Info("[CreateUser] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	id := s.idGen.Get()
 	in := &persistence.UserCreate{
 		ClientID: clientID,
@@ -27,8 +25,6 @@ func (s *Service) CreateUser(ctx context.Context, req *api.CreateUserReq) (strin
 }
 
 func (s *Service) UpdateActivated(ctx context.Context, uid string, activated bool) error {
-	s.log.Info("[UpdateActivated] request is received")
-
 	if err := s.persister.User().UpdateActivated(ctx, s.DecodeID(types.ParseUID(uid)), activated); err != nil {
 		s.log.Error("[UpdateActivated] failed to update user activated", "uid", uid, "activated", activated, "error", err)
 		return err
@@ -38,8 +34,6 @@ func (s *Service) UpdateActivated(ctx context.Context, uid string, activated boo
 }
 
 func (s *Service) DeleteUser(ctx context.Context, uid string) error {
-	s.log.Info("[DeleteUser] request is received")
-
 	if err := s.persister.User().Delete(ctx, s.DecodeID(types.ParseUID(uid))); err != nil {
 		s.log.Error("[DeleteUser] failed to delete client", "uid", uid, "error", err)
 		return err
@@ -49,9 +43,7 @@ func (s *Service) DeleteUser(ctx context.Context, uid string) error {
 }
 
 func (s *Service) AddFriend(ctx context.Context, uid, friendUID string) error {
-	s.log.Info("[DeleteUser] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	in := &persistence.UserFriend{
 		ClientID:     clientID,
 		UserID:       s.idGen.DecodeID(types.ParseUID(uid)),
@@ -66,9 +58,7 @@ func (s *Service) AddFriend(ctx context.Context, uid, friendUID string) error {
 }
 
 func (s *Service) DeleteFriend(ctx context.Context, uid, friendUID string) error {
-	s.log.Info("[DeleteUser] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	in := &persistence.UserFriend{
 		ClientID:     clientID,
 		UserID:       s.idGen.DecodeID(types.ParseUID(uid)),
@@ -83,9 +73,7 @@ func (s *Service) DeleteFriend(ctx context.Context, uid, friendUID string) error
 }
 
 func (s *Service) GenerateUserToken(ctx context.Context, uid string) (string, string, error) {
-	s.log.Info("[GenerateUserToken] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	client, err := s.getClient(ctx, clientID)
 	if err != nil {
 		s.log.Error("[GenerateUserToken] failed to get client", "client_id", clientID, "error", err)
@@ -104,9 +92,7 @@ func (s *Service) GenerateUserToken(ctx context.Context, uid string) (string, st
 }
 
 func (s *Service) GetFriends(ctx context.Context, uid string) ([]string, error) {
-	s.log.Info("[GetFriends] request is received")
-
-	clientID := s.MustGetContextClient(ctx)
+	clientID := MustClientIDFromContext(ctx)
 	friendIDs, err := s.persister.User().GetFriends(ctx, s.DecodeID(types.ParseUID(uid)))
 	if err != nil {
 		s.log.Error("[GetFriends] failed to get friends", "client_id", clientID, "uid", uid, "error", err)

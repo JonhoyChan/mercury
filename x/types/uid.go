@@ -3,7 +3,7 @@ package types
 import (
 	"encoding/base64"
 	"encoding/binary"
-	"mercury/x/config"
+	"mercury/config"
 
 	"github.com/bwmarrin/snowflake"
 	"golang.org/x/crypto/xtea"
@@ -15,19 +15,15 @@ type IDGenerator struct {
 	cipher *xtea.Cipher
 }
 
-type GeneratorIDProvider interface {
-	GeneratorID() *config.GeneratorIDConfig
-}
-
 // Init initialises the ID generator
-func (g *IDGenerator) Init(c GeneratorIDProvider) error {
+func (g *IDGenerator) Init(c config.IDGenerator) error {
 	var err error
 
 	if g.seq == nil {
-		g.seq, err = snowflake.NewNode(c.GeneratorID().WorkID)
+		g.seq, err = snowflake.NewNode(c.WorkID)
 	}
 	if g.cipher == nil {
-		g.cipher, err = xtea.NewCipher(c.GeneratorID().Key)
+		g.cipher, err = xtea.NewCipher(c.Key)
 	}
 
 	return err

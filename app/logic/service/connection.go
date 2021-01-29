@@ -7,8 +7,6 @@ import (
 )
 
 func (s *Service) Connect(ctx context.Context, req *api.ConnectReq) (string, string, error) {
-	s.log.Info("[Connect] request is received")
-
 	clientID := s.cache.GetClientID(req.JWTToken)
 	if clientID == "" {
 		return "", "", ecode.ErrInvalidToken
@@ -35,8 +33,6 @@ func (s *Service) Connect(ctx context.Context, req *api.ConnectReq) (string, str
 }
 
 func (s *Service) Disconnect(ctx context.Context, req *api.DisconnectReq) error {
-	s.log.Info("[Disconnect] request is received")
-
 	if err := s.cache.DeleteMapping(req.UID, req.SID); err != nil {
 		s.log.Error("[Disconnect] failed to delete mapping", "uid", req.UID, "error", err)
 		return err
@@ -46,8 +42,6 @@ func (s *Service) Disconnect(ctx context.Context, req *api.DisconnectReq) error 
 }
 
 func (s *Service) Heartbeat(ctx context.Context, req *api.HeartbeatReq) error {
-	s.log.Info("[Heartbeat] request is received")
-
 	expired, err := s.cache.ExpireMapping(req.UID, req.SID)
 	if err != nil {
 		s.log.Error("[Heartbeat] failed to expire mapping", "uid", req.UID, "error", err)

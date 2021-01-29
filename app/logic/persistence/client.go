@@ -6,9 +6,13 @@ import (
 
 type Client struct {
 	ID          string
+	CreatedAt   int64
+	UpdatedAt   int64
 	Name        string
 	TokenSecret []byte
 	TokenExpire time.Duration
+	UserCount   int64
+	GroupCount  int64
 }
 
 type ClientCreate struct {

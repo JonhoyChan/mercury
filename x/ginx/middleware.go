@@ -34,15 +34,14 @@ func loggerHandler(c *gin.Context) {
 		code = 200
 	}
 
-	ctx := log.Ctx{
-		"method":      c.Request.Method,
-		"path":        path,
-		"status_code": c.Writer.Status(),
-		"ip":          c.ClientIP(),
-		"time":        end.Sub(start).String(),
-		"ecode":       code,
-	}
-	log.Debug("[Logger] request processing completed", ctx)
+	log.Debug("[Logger] request processing completed",
+		"method", c.Request.Method,
+		"path", path,
+		"status_code", c.Writer.Status(),
+		"ip", c.ClientIP(),
+		"time", end.Sub(start).String(),
+		"ecode", code,
+	)
 }
 
 func Logger() gin.HandlerFunc {
@@ -56,7 +55,7 @@ func recoverHandler(c *gin.Context) {
 			buf := make([]byte, size)
 			buf = buf[:runtime.Stack(buf, false)]
 			req, _ := httputil.DumpRequest(c.Request, false)
-			log.Error("[Recovery] panic recovered", log.Ctx{"request": req, "error": err, "buffer": buf})
+			log.Error("[Recovery] panic recovered", "request", req, "error", err, "buffer", buf)
 			c.AbortWithStatus(StatusInternalServerError)
 		}
 	}()
