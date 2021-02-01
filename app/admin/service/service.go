@@ -15,12 +15,19 @@ import (
 	"time"
 )
 
+type Servicer interface {
+	GetClient(ctx context.Context, clientID string) (*model.Client, error)
+	CreateClient(ctx context.Context, req *chatApi.CreateClientReq) (*model.NewClient, error)
+	UpdateClient(ctx context.Context, clientID string, req *chatApi.UpdateClientReq) error
+	DeleteClient(ctx context.Context, clientID string) error
+}
+
 type Service struct {
 	log     log.Logger
 	service chatApi.ChatAdminService
 }
 
-func NewService(log log.Logger) *Service {
+func NewService(log log.Logger) (*Service, error) {
 	opts := []client.Option{
 		client.Retries(2),
 		client.Retry(ecode.RetryOnMicroError),
@@ -32,7 +39,7 @@ func NewService(log log.Logger) *Service {
 	return &Service{
 		log:     log,
 		service: chatApi.NewChatAdminService("mercury.logic", c),
-	}
+	}, nil
 }
 
 func beforeCall(clientID string) client.CallWrapper {

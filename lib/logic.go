@@ -46,7 +46,7 @@ func (s *LogicServer) Serve(ctx context.Context) error {
 	opts := microx.DefaultMicroOptions(srvCfg)
 	opts = append(opts, micro.WrapHandler(
 		ratelimit.NewHandlerWrapper(1024),
-		s.srv.AuthenticateClientToken,
+		service.AuthenticateClientToken(s.srv),
 	))
 
 	// 判断是否使用了etcd作为服务注册
@@ -83,6 +83,7 @@ func (s *LogicServer) Serve(ctx context.Context) error {
 			panic("unable to connect to stan broker:" + err.Error())
 		}
 
+		broker.DefaultBroker = b
 		opts = append(opts, micro.Broker(b))
 	}
 

@@ -11,10 +11,10 @@ func NewCometCommand(f Factory) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "comet",
 		Short: "",
+		Long:  ``,
 		Annotations: map[string]string{
 			"group": "server",
 		},
-		Long: ``,
 		Args: cobra.NoArgs,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := o.Complete(f, args); err != nil {

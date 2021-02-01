@@ -76,6 +76,7 @@ func (s *JobServer) Serve(ctx context.Context) error {
 			panic("unable to connect to stan broker:" + err.Error())
 		}
 
+		broker.DefaultBroker = b
 		opts = append(opts, server.Broker(b))
 	}
 

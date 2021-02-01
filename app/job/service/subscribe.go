@@ -5,11 +5,10 @@ import (
 	cApi "mercury/app/comet/api"
 	"mercury/app/logic/api"
 	"mercury/x/ecode"
-	"mercury/x/log"
 )
 
 func (s *Service) subscribePushMessage(e broker.Event) error {
-	log.Info("subscribe", "topic", e.Topic())
+	s.log.Info("subscribe", "topic", e.Topic())
 
 	if e.Message() == nil {
 		return ecode.NewError("message can not be nil")
@@ -27,7 +26,7 @@ func (s *Service) subscribePushMessage(e broker.Event) error {
 }
 
 func (s *Service) subscribeBroadcastMessage(e broker.Event) error {
-	log.Info("subscribe", "topic", e.Topic())
+	s.log.Info("subscribe", "topic", e.Topic())
 
 	if e.Message() == nil {
 		return ecode.NewError("message can not be nil")

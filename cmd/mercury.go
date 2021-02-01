@@ -23,6 +23,10 @@ func NewMercuryCommand(repoPath string) (*cobra.Command, func() <-chan error) {
 		NewJobCommand(opt),
 		NewCometCommand(opt),
 		NewLogicCommand(opt),
+		NewAdminCommand(opt),
+
+		NewClientCommand(opt),
+		NewUserCommand(opt),
 	)
 	return cmd, opt.Shutdown
 }

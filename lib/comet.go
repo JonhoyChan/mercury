@@ -12,7 +12,6 @@ import (
 	"mercury/app/comet/api"
 	"mercury/app/comet/service"
 	"mercury/app/comet/stats"
-	"mercury/config"
 	"mercury/x"
 	"mercury/x/ecode"
 	"mercury/x/ginx"
@@ -53,10 +52,10 @@ func (s *CometServer) Serve(ctx context.Context) error {
 		return ecode.NewError("can not found \"mercury.job\" service config")
 	}
 
-	go s.RegisterRPC(cfg, srvCfg)
-
-	opts := microx.DefaultWebOptions(srvCfg)
-	opts = append(opts, web.Id(s.id))
+	webOpts := microx.DefaultWebOptions(srvCfg)
+	webOpts = append(webOpts, web.Id(s.id))
+	srvOpts := microx.DefaultServerOptions(srvCfg)
+	srvOpts = append(srvOpts, server.Id(s.id), server.Address(srvCfg.RpcAddress()), server.WrapHandler(ecode.MicroHandlerFunc))
 	if cfg.Registry.ETCD.Enable {
 		r := etcdv3.NewRegistry(func(op *registry.Options) {
 			var addresses []string
@@ -67,10 +66,13 @@ func (s *CometServer) Serve(ctx context.Context) error {
 
 			op.Addrs = addresses
 		})
-		opts = append(opts, web.Registry(r))
+		webOpts = append(webOpts, web.Registry(r))
+		srvOpts = append(srvOpts, server.Registry(r))
 	}
 
-	microWeb := web.NewService(opts...)
+	go s.RegisterRPC(srvOpts...)
+
+	microWeb := web.NewService(webOpts...)
 	if err = microWeb.Init(); err != nil {
 		return err
 	}
@@ -109,23 +111,7 @@ func (s *CometServer) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	s.engine.ServeHTTP(w, req)
 }
 
-func (s *CometServer) RegisterRPC(cfg *config.Config, srvCfg *config.Service) {
-	opts := microx.DefaultServerOptions(srvCfg)
-	opts = append(opts, server.Id(s.id), server.Address(srvCfg.RpcAddress()), server.WrapHandler(ecode.MicroHandlerFunc))
-
-	if cfg.Registry.ETCD.Enable {
-		r := etcdv3.NewRegistry(func(op *registry.Options) {
-			var addresses []string
-			for _, v := range cfg.Registry.ETCD.Addresses {
-				v = strings.TrimSpace(v)
-				addresses = append(addresses, x.ReplaceHttpOrHttps(v))
-			}
-
-			op.Addrs = addresses
-		})
-		opts = append(opts, server.Registry(r))
-	}
-
+func (s *CometServer) RegisterRPC(opts ...server.Option) {
 	microServer := grpc.NewServer(opts...)
 	if err := microServer.Init(); err != nil {
 		panic("unable to initialize server:" + err.Error())
@@ -141,7 +127,7 @@ func (s *CometServer) RegisterRPC(cfg *config.Config, srvCfg *config.Service) {
 }
 
 func (s *CometServer) PushMessage(ctx context.Context, req *api.PushMessageReq, resp *api.Empty) error {
-	//log.Info("[PushMessage] request is received")
+	s.log.Info("[PushMessage] request is received")
 
 	for _, sid := range req.SIDs {
 		session := s.srv.SessionStore().Get(sid)
@@ -153,7 +139,7 @@ func (s *CometServer) PushMessage(ctx context.Context, req *api.PushMessageReq, 
 }
 
 func (s *CometServer) BroadcastMessage(ctx context.Context, req *api.BroadcastMessageReq, resp *api.Empty) error {
-	//s.log.Info("[BroadcastMessage] request is received")
+	s.log.Info("[BroadcastMessage] request is received")
 
 	sessions := s.srv.SessionStore().GetAll()
 	for _, s := range sessions {

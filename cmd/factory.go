@@ -17,7 +17,7 @@ type Factory interface {
 	Init() error
 
 	Instance() *lib.Instance
-	// path to mercury data directory
+	Logger() log.Logger
 	RepoPath() string
 	Config() (*config.Config, error)
 
@@ -25,6 +25,7 @@ type Factory interface {
 	JobServer() (*lib.JobServer, error)
 	CometServer() (*lib.CometServer, error)
 	LogicServer() (*lib.LogicServer, error)
+	AdminServer() (*lib.AdminServer, error)
 }
 
 // StandardRepoPath returns mercury paths based on the MERCURY_PATH environment
@@ -96,12 +97,17 @@ func (o *Options) Instance() *lib.Instance {
 	return o.inst
 }
 
-// RepoPath returns the path to the mercury data directory
+func (o *Options) Logger() log.Logger {
+	if err := o.Init(); err != nil {
+		return nil
+	}
+	return o.log
+}
+
 func (o *Options) RepoPath() string {
 	return o.repoPath
 }
 
-// Config returns from internal state
 func (o *Options) Config() (*config.Config, error) {
 	if err := o.Init(); err != nil {
 		return nil, err
@@ -136,6 +142,13 @@ func (o *Options) LogicServer() (*lib.LogicServer, error) {
 		return nil, err
 	}
 	return lib.NewLogicServer(o.inst, o.log.New("lib", "logic")), nil
+}
+
+func (o *Options) AdminServer() (*lib.AdminServer, error) {
+	if err := o.Init(); err != nil {
+		return nil, err
+	}
+	return lib.NewAdminServer(o.inst, o.log.New("lib", "admin")), nil
 }
 
 func (o *Options) Shutdown() <-chan error {

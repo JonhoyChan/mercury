@@ -27,7 +27,7 @@ import (
 )
 
 type Servicer interface {
-	AuthenticateClientToken(fn server.HandlerFunc) server.HandlerFunc
+	Authenticate(token string, out interface{}) (string, error)
 
 	GetClient(ctx context.Context) (*api.Client, error)
 	CreateClient(ctx context.Context, req *api.CreateClientReq) (string, string, error)
@@ -220,18 +220,6 @@ type PublishMessage struct {
 	Message *broker.Message
 }
 
-func (s *Service) publish(payload interface{}) {
-	publicMessage, ok := payload.(*PublishMessage)
-	if !ok {
-		return
-	}
-
-	if err := broker.Publish(publicMessage.Topic, publicMessage.Message); err != nil {
-		s.log.Error("failed to publish message", "error", err)
-		return
-	}
-}
-
 type marshaler interface {
 	Marshal() ([]byte, error)
 }
@@ -251,40 +239,51 @@ func (s *Service) invoke(topic string, m marshaler) error {
 	return nil
 }
 
-func (s *Service) AuthenticateClientToken(fn server.HandlerFunc) server.HandlerFunc {
-	return ecode.MicroHandlerFunc(func(ctx context.Context, req server.Request, rsp interface{}) error {
-		if !req.Stream() {
-			if strings.HasPrefix(req.Endpoint(), "ChatAdmin.") {
-				//if sign, ok := metadata.Get(ctx, "Sign"); ok {
-				//	// TODO check sign
-				//	fmt.Println(sign)
-				//
-				timestamp, _ := metadata.Get(ctx, "Timestamp")
-				issuer, _ := metadata.Get(ctx, "Issuer")
-				fmt.Println(timestamp, issuer)
+func AuthenticateClientToken(srv Servicer) server.HandlerWrapper {
+	return func(fn server.HandlerFunc) server.HandlerFunc {
+		return ecode.MicroHandlerFunc(func(ctx context.Context, req server.Request, rsp interface{}) error {
+			if !req.Stream() {
+				if strings.HasPrefix(req.Endpoint(), "ChatAdmin.") {
+					//if sign, ok := metadata.Get(ctx, "Sign"); ok {
+					//	// TODO check sign
+					//	fmt.Println(sign)
+					//
+					timestamp, _ := metadata.Get(ctx, "Timestamp")
+					issuer, _ := metadata.Get(ctx, "Issuer")
+					fmt.Println(timestamp, issuer)
 
-				clientID, _ := metadata.Get(ctx, "Id")
-				ctx = ContextWithClientID(ctx, clientID)
-			} else {
-				v := reflect.ValueOf(req.Body())
-				if v.Kind() == reflect.Ptr {
-					v = v.Elem()
-					if f := v.FieldByName("Token"); f.Kind() == reflect.String {
-						var clientID string
-						_, err := s.token.Authenticate(f.String(), &clientID)
-						if err != nil {
-							s.log.Error("[AuthenticateClientToken] failed to authenticating the token", "error", err)
-							return ecode.ErrInvalidToken
+					clientID, _ := metadata.Get(ctx, "Id")
+					ctx = ContextWithClientID(ctx, clientID)
+				} else {
+					v := reflect.ValueOf(req.Body())
+					if v.Kind() == reflect.Ptr {
+						v = v.Elem()
+						if f := v.FieldByName("Token"); f.Kind() == reflect.String {
+							var clientID string
+							_, err := srv.Authenticate(f.String(), &clientID)
+							if err != nil {
+								return ecode.ErrInvalidToken
+							}
+							ctx = ContextWithClientID(ctx, clientID)
 						}
-						ctx = ContextWithClientID(ctx, clientID)
 					}
 				}
 			}
-		}
 
-		s.log.Info("[Authenticate] new request", "endpoint", req.Endpoint())
-		return fn(ctx, req, rsp)
-	})
+			//s.log.Info("[Authenticate] new request", "endpoint", req.Endpoint())
+			return fn(ctx, req, rsp)
+		})
+	}
+}
+
+func (s *Service) Authenticate(token string, out interface{}) (lifetime string, err error) {
+	lifetime, err = s.token.Authenticate(token, out)
+	if err != nil {
+		s.log.Error("[AuthenticateClientToken] failed to authenticating the token", "error", err)
+		return
+	}
+
+	return
 }
 
 func (s *Service) DecodeID(uid types.ID) int64 {

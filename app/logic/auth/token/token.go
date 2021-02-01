@@ -41,7 +41,7 @@ func NewAuthenticator(p AuthenticatorProvider) (*authenticator, error) {
 
 	return &authenticator{
 		hmacSalt: tokenConfig.Key,
-		lifetime: time.Duration(tokenConfig.Expire) * time.Second,
+		lifetime: tokenConfig.Expire,
 	}, nil
 }
 
