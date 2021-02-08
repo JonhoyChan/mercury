@@ -67,7 +67,7 @@ type ClientPersister interface {
 }
 
 type UserPersister interface {
-	CheckActivated(_ context.Context, clientID, uid string) (bool, error)
+	CheckActivated(ctx context.Context, clientID, uid string) (bool, error)
 
 	Create(ctx context.Context, in *UserCreate) error
 
@@ -77,29 +77,29 @@ type UserPersister interface {
 
 	AddFriend(ctx context.Context, in *UserFriend) error
 
-	GetFriends(_ context.Context, userID int64) ([]int64, error)
+	GetFriends(ctx context.Context, userID int64) ([]int64, error)
 
 	DeleteFriend(ctx context.Context, in *UserFriend) error
 }
 
 type MessagePersister interface {
-	Add(_ context.Context, message *Message) error
+	Add(ctx context.Context, message *Message) error
 
-	GetTopicLastSequence(_ context.Context, topic string) (int64, error)
+	GetTopicLastSequence(ctx context.Context, topic string) (int64, error)
 
-	GetTopicMessageBySequence(_ context.Context, topic string, sequence int64) (*Message, error)
+	GetTopicMessageBySequence(ctx context.Context, topic string, sequence int64) (*Message, error)
 
-	GetTopicMessagesByLastSequence(_ context.Context, topic string, sequence int64) ([]*Message, int64, error)
+	GetTopicMessagesByLastSequence(ctx context.Context, topic string, sequence int64) ([]*Message, int64, error)
 }
 
 type GroupPersister interface {
-	Create(_ context.Context, in *GroupCreate) (*Group, error)
+	Create(ctx context.Context, in *GroupCreate) (*Group, error)
 
-	AddMember(_ context.Context, in *GroupMember) error
+	AddMember(ctx context.Context, in *GroupMember) error
 
-	CheckMember(_ context.Context, groupID int64, userID int64) (bool, error)
+	CheckMember(ctx context.Context, groupID int64, userID int64) (bool, error)
 
-	GetMembers(_ context.Context, clientID string, groupID int64) ([]int64, error)
+	GetMembers(ctx context.Context, clientID string, groupID int64) ([]int64, error)
 
-	GetGroups(_ context.Context, userID int64) ([]*Group, error)
+	GetGroups(ctx context.Context, userID int64) ([]*Group, error)
 }
