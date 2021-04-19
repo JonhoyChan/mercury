@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	jsoniter "github.com/json-iterator/go"
 	chatApi "mercury/app/logic/api"
 	"mercury/x"
 	"mercury/x/ecode"
@@ -42,10 +41,8 @@ const (
 var (
 	// Maximum message size allowed from peer.
 	MaxMessageSize int64 = 1 << 19 // 512K
-	// currentVersion is the current version
-	CurrentVersion = "0.1"
 	// minSupportedVersion is the minimum supported version
-	MinSupportedVersion = "0.1"
+	MinSupportedVersion = "0.1.0-dev"
 )
 
 var minSupportedVersionValue = x.ParseVersion(MinSupportedVersion)
@@ -157,31 +154,9 @@ func (s *Session) writeLoop() {
 	}
 }
 
-type Proto struct {
-	// operation for request
-	Operation types.Operation `json:"operation" validate:"required"`
-	// binary body bytes
-	Body jsoniter.RawMessage `json:"body" validate:"required"`
-}
-
-func (p *Proto) Validate() bool {
-	if err := validate.Struct(p); err != nil {
-		return false
-	}
-	return true
-}
-
-func (p *Proto) Marshal() ([]byte, error) {
-	return jsoniter.Marshal(p)
-}
-
-func (p *Proto) Unmarshal(data []byte) error {
-	return jsoniter.Unmarshal(data, p)
-}
-
 // Message received, convert bytes to ClientComMessage and dispatch
 func (s *Session) dispatchRaw(raw []byte) {
-	var p Proto
+	var p Protocol
 	if err := p.Unmarshal(raw); err != nil {
 		s.queueOut(&p, ErrMalformed("", 0))
 		return
@@ -218,7 +193,7 @@ func (s *Session) route(o types.Operation) handlerFunc {
 	return handler
 }
 
-func (s *Session) dispatch(p *Proto) {
+func (s *Session) dispatch(p *Protocol) {
 	s.lastAction = time.Now().UTC()
 	timestamp := s.lastAction.Unix()
 
@@ -386,9 +361,9 @@ func (s *Session) notification(message *ServerMessage) []byte {
 	return NoErr(req.MID, message.Timestamp, nil)
 }
 
-func (s *Session) serialize(p *Proto, body []byte) []byte {
+func (s *Session) serialize(p *Protocol, body []byte) []byte {
 	if p == nil {
-		p = &Proto{
+		p = &Protocol{
 			Operation: types.OperationUnknown,
 		}
 	}
@@ -416,7 +391,7 @@ func (s *Session) deserialize(v requester, body []byte) error {
 
 // queueOut attempts to send a ServerComMessage to a session; if the send buffer is full,
 // timeout is `sendTimeout`.
-func (s *Session) queueOut(p *Proto, body []byte) bool {
+func (s *Session) queueOut(p *Protocol, body []byte) bool {
 	if s == nil {
 		return true
 	}
@@ -430,7 +405,7 @@ func (s *Session) queueOut(p *Proto, body []byte) bool {
 }
 
 func (s *Session) QueueOut(operation types.Operation, body []byte) bool {
-	p := &Proto{
+	p := &Protocol{
 		Operation: operation,
 	}
 	return s.queueOut(p, body)

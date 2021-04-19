@@ -27,9 +27,9 @@ func TestPassphraseBoxer_WrapType(t *testing.T) {
 	}
 }
 
-func TestPassphraseBoxer_Seal(t *testing.T) {
+func TestPassphraseBoxer_Encrypt(t *testing.T) {
 	initSecretBoxer(t)
-	seal, err := secretBoxer.Seal([]byte("/chat/v1/channels"))
+	seal, err := secretBoxer.Encrypt([]byte("/chat/v1/channels"))
 	if err != nil {
 		t.Error(err)
 	}
@@ -39,14 +39,7 @@ func TestPassphraseBoxer_Seal(t *testing.T) {
 
 func TestPassphraseBoxer_Open(t *testing.T) {
 	initSecretBoxer(t)
-	//seal, err := secretBoxer.Seal([]byte("/api/v1/channels"))
-	//if err != nil {
-	//	t.Error(err)
-	//}
-	//
-	//t.Log(seal)
-
-	openSeal, err := secretBoxer.Open("OAEG7PZgaSfYXv/uySqp0NM+OJ90siyN4GS2nTESYbWSEjAoEaNXA8zwpmG/FzAbhb47uCBt3PbmIn5NQUJuFMeaopQ2Pf0s")
+	openSeal, err := secretBoxer.Decrypt("OAEG7PZgaSfYXv/uySqp0NM+OJ90siyN4GS2nTESYbWSEjAoEaNXA8zwpmG/FzAbhb47uCBt3PbmIn5NQUJuFMeaopQ2Pf0s")
 	if err != nil {
 		t.Error(err)
 	}

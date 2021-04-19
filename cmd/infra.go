@@ -11,7 +11,7 @@ func NewInfraCommand(f Factory) *cobra.Command {
 	o := InfraOptions{}
 	cmd := &cobra.Command{
 		Use:   "infra",
-		Short: "",
+		Short: "Provide configuration of each service",
 		Long:  ``,
 		Annotations: map[string]string{
 			"group": "server",

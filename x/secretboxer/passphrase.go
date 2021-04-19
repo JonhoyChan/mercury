@@ -49,7 +49,7 @@ func (b *PassphraseBoxer) EncodingType() string {
 }
 
 // Encrypt the byte fragment and return a base64 string.
-func (b *PassphraseBoxer) Seal(in []byte) (string, error) {
+func (b *PassphraseBoxer) Encrypt(in []byte) (string, error) {
 	var nonce [nonceLength]byte
 	// generate a random nonce
 	if _, err := io.ReadFull(rand.Reader, nonce[:]); err != nil {
@@ -76,7 +76,7 @@ func (b *PassphraseBoxer) Seal(in []byte) (string, error) {
 }
 
 // Decrypt the encrypted base64 string and return the decrypted byte fragment.
-func (b *PassphraseBoxer) Open(in string) ([]byte, error) {
+func (b *PassphraseBoxer) Decrypt(in string) ([]byte, error) {
 	var (
 		buf []byte
 		err error

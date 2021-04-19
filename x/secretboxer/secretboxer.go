@@ -15,9 +15,9 @@ const (
 
 type SecretBoxer interface {
 	// Encrypt the byte fragment and return a base64 string.
-	Seal(in []byte) (string, error)
+	Encrypt(in []byte) (string, error)
 	// Decrypt the encrypted base64 string and return the decrypted byte fragment.
-	Open(in string) ([]byte, error)
+	Decrypt(in string) ([]byte, error)
 	// Return the wrap type of SecretBoxer(e.g, passphrase).
 	WrapType() string
 	// Return the encoding type of SecretBoxer (e.g, std, url).

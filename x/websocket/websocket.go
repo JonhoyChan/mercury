@@ -66,7 +66,7 @@ var upgrader = websocket.Upgrader{
 }
 
 func Upgrade(w http.ResponseWriter, r *http.Request) (*Connection, error) {
-	// TODO config
+	// TODO
 	//upgrader.ReadBufferSize = ?
 	//upgrader.WriteBufferSize = ?
 

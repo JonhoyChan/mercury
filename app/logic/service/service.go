@@ -184,7 +184,6 @@ func (s *Service) withPersister() error {
 			//if err != nil {
 			//	return err
 			//}
-			////TODO 开发时使用，后续删除
 			//gormDB.AutoMigrate(
 			//	new(entity.Client),
 			//	new(entity.User),

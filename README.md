@@ -3,6 +3,14 @@
 Mercury is an instant messaging backend service
 
 
+# How to use?
+```shell script
+$ ./mercury infra # provide configuration of each service
+$ ./mercury logic 
+$ ./mercury job 
+$ ./mercury comet 
+```
+
 ### Handshake
 ```json
 {"operation": "handshake", "body": {"mid": "mid", "version": "v0.1", "user_agent": "user_agent", "device_id": "xxx", "token": "user_token"}}
