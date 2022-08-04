@@ -9,8 +9,8 @@ func NewMercuryCommand(repoPath string) (*cobra.Command, func() <-chan error) {
 
 	cmd := &cobra.Command{
 		Use:   "mercury",
-		Short: "",
-		Long:  ``,
+		Short: "Mercury is an instant messaging server.",
+		Long:  `Mercury is an instant messaging server.`,
 		PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		},
 	}
